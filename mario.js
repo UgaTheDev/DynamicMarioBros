@@ -3,37 +3,38 @@
 
 function FullScreenMario() {
   var time_start = Date.now();
-  
+
   // Thanks, Obama...
   ensureLocalStorage();
-  
+
   // I keep this cute little mini-library for some handy functions
   TonedJS(true);
-  
+
   // It's useful to keep references to the body
   window.body = document.body;
   window.bodystyle = body.style;
-  
-  // Know when to shut up
-  window.verbosity = {Maps: false,
-                      Sounds: false,
-                      };
-  
-  window.requestAnimationFrame = window.requestAnimationFrame
-                           || window.mozRequestAnimationFrame
-                           || window.webkitRequestAnimationFrame
-                           || window.msRequestAnimationFrame
-                           || function(func) { setTimeout(func, timer); };
-  window.cancelAnimationFrame = window.cancelAnimationFrame
-                           || window.webkitCancelRequestAnimationFrame
-                           || window.mozCancelRequestAnimationFrame
-                           || window.oCancelRequestAnimationFrame
-                           || window.msCancelRequestAnimationFrame
-                           || clearTimeout;
 
-  window.Uint8ClampedArray = window.Uint8ClampedArray
-                          || window.Uint8Array
-                          || Array;
+  // Know when to shut up
+  window.verbosity = { Maps: false, Sounds: false };
+
+  window.requestAnimationFrame =
+    window.requestAnimationFrame ||
+    window.mozRequestAnimationFrame ||
+    window.webkitRequestAnimationFrame ||
+    window.msRequestAnimationFrame ||
+    function (func) {
+      setTimeout(func, timer);
+    };
+  window.cancelAnimationFrame =
+    window.cancelAnimationFrame ||
+    window.webkitCancelRequestAnimationFrame ||
+    window.mozCancelRequestAnimationFrame ||
+    window.oCancelRequestAnimationFrame ||
+    window.msCancelRequestAnimationFrame ||
+    clearTimeout;
+
+  window.Uint8ClampedArray =
+    window.Uint8ClampedArray || window.Uint8Array || Array;
 
   // Resetting everything may take a while
   resetMeasurements();
@@ -46,12 +47,12 @@ function FullScreenMario() {
   resetSeed();
   resetSounds();
 
-  window.luigi = (localStorage && localStorage.luigi == "true");
+  window.luigi = localStorage && localStorage.luigi == "true";
 
   // With that all set, set the map to World11.
   window.gameon = true;
-  setMap(1,1);
-  
+  setMap(1, 1);
+
   log("It took " + (Date.now() - time_start) + " milliseconds to start.");
 }
 
@@ -59,17 +60,17 @@ function FullScreenMario() {
 function ensureLocalStorage() {
   var ls_ok = false;
   try {
-  if(!window.hasOwnProperty("localStorage"))
-    window.localStorage = { crappy: true };
-  
-  // Some browsers (mainly IE) won't allow it on a local machine anyway
-  if(window.localStorage) ls_ok = true;
- }
- catch(err) {
+    if (!window.hasOwnProperty("localStorage"))
+      window.localStorage = { crappy: true };
+
+    // Some browsers (mainly IE) won't allow it on a local machine anyway
+    if (window.localStorage) ls_ok = true;
+  } catch (err) {
     ls_ok = false;
   }
-  if(!ls_ok) {
-    var nope = document.body.innerText = "It seems your browser does not allow localStorage!";
+  if (!ls_ok) {
+    var nope = (document.body.innerText =
+      "It seems your browser does not allow localStorage!");
     throw nope;
   }
 }
@@ -78,22 +79,22 @@ function ensureLocalStorage() {
 function resetMeasurements() {
   resetUnitsize(4);
   resetTimer(1000 / 60);
-  
+
   window.jumplev1 = 32;
   window.jumplev2 = 64;
-  window.ceillev  = 88; // The floor is 88 spaces (11 blocks) below the yloc = 0 level
-  window.ceilmax  = 104; // The floor is 104 spaces (13 blocks) below the top of the screen (yloc = -16)
-  window.castlev  = -48;
-  window.paused   = true;
-  
+  window.ceillev = 88; // The floor is 88 spaces (11 blocks) below the yloc = 0 level
+  window.ceilmax = 104; // The floor is 104 spaces (13 blocks) below the top of the screen (yloc = -16)
+  window.castlev = -48;
+  window.paused = true;
+
   resetGameScreen();
-  if(!window.parentwindow) window.parentwindow = false;
+  if (!window.parentwindow) window.parentwindow = false;
 }
 
 // Unitsize is kept as a measure of how much to expand (typically 4)
 function resetUnitsize(num) {
   window.unitsize = num;
-  for(var i = 2; i <= 64; ++i) {
+  for (var i = 2; i <= 64; ++i) {
     window["unitsizet" + i] = unitsize * i;
     window["unitsized" + i] = unitsize / i;
   }
@@ -102,11 +103,11 @@ function resetUnitsize(num) {
 }
 
 function resetTimer(num) {
-  num = roundDigit(num, .001);
+  num = roundDigit(num, 0.001);
   window.timer = window.timernorm = num;
   window.timert2 = num * 2;
   window.timerd2 = num / 2;
-  window.fps = window.fps_target = roundDigit(1000 / num, .001);
+  window.fps = window.fps_target = roundDigit(1000 / num, 0.001);
   window.time_prev = Date.now();
 }
 
@@ -118,13 +119,14 @@ function getGameScreen() {
   // Middlex is static and only used for scrolling to the right
   this.middlex = (this.left + this.right) / 2;
   // this.middlex = (this.left + this.right) / 3;
-  
+
   // This is the bottom of the screen - water, pipes, etc. go until here
   window.botmax = this.height - ceilmax;
-  if(botmax < unitsize) {
-    body.innerHTML = "<div><br>Your screen isn't high enough. Make it taller, then refresh.</div>";
+  if (botmax < unitsize) {
+    body.innerHTML =
+      "<div><br>Your screen isn't high enough. Make it taller, then refresh.</div>";
   }
-  
+
   // The distance at which Things die from falling
   this.deathheight = this.bottom + 48;
 }
@@ -146,7 +148,7 @@ function resetEvents() {
     onSpriteCycleStart: "onadding",
     doSpriteCycleStart: "placed",
     cycleCheckValidity: "alive",
-    timingDefault: 9
+    timingDefault: 9,
   });
 }
 
@@ -154,12 +156,16 @@ function resetEvents() {
 function resetSounds() {
   window.sounds = {};
   window.theme = false;
-  window.muted = (localStorage && localStorage.muted == "true");
-  
+  window.muted = localStorage && localStorage.muted == "true";
+
   window.AudioPlayer = new AudioPlayr({
     directory: "Sounds",
-    getVolumeLocal: function() { return .49; },
-    getThemeDefault: function() { return area.theme; }, 
+    getVolumeLocal: function () {
+      return 0.49;
+    },
+    getThemeDefault: function () {
+      return area.theme;
+    },
     library: {
       Sounds: [
         "Bowser Falls",
@@ -189,7 +195,7 @@ function resetSounds() {
         "Stage Clear",
         "Vine Emerging",
         "World Clear",
-        "You Dead"
+        "You Dead",
       ],
       Themes: [
         "Castle",
@@ -203,9 +209,9 @@ function resetSounds() {
         "Hurry Underwater",
         "Hurry Underworld",
         "Hurry Star",
-        "Hurry Sky"
-      ]
-    }
+        "Hurry Sky",
+      ],
+    },
   });
 }
 
@@ -219,7 +225,7 @@ function resetQuadrants() {
     screen_height: window.innerHeight,
     tolerance: unitsized2,
     onUpdate: spawnMap,
-    onCollide: false
+    onCollide: false,
   });
 }
 
@@ -230,11 +236,17 @@ function resetGameState(nocount) {
   clearAllTimeouts();
   // Also reset data
   resetData();
-  window.nokeys = window.spawning = window.spawnon =
-    window.notime = window.editing = window.qcount = window.lastscroll = 0;
+  window.nokeys =
+    window.spawning =
+    window.spawnon =
+    window.notime =
+    window.editing =
+    window.qcount =
+    window.lastscroll =
+      0;
   window.paused = window.gameon = window.speed = 1;
   // Shifting location shouldn't wipe the gamecount (for key histories)
-  if(!nocount) window.gamecount = 0;
+  if (!nocount) window.gamecount = 0;
   // And quadrants
   resetQuadrants();
   // Keep a history of pressed keys
@@ -244,27 +256,30 @@ function resetGameState(nocount) {
 }
 
 function scrollWindow(x, y) {
-  x = x || 0; y = y || 0;
-  var xinv = -x, yinv = -y;
-  
-  gamescreen.left += x; gamescreen.right += x;
-  gamescreen.top += y; gamescreen.bottom += y;
-  
+  x = x || 0;
+  y = y || 0;
+  var xinv = -x,
+    yinv = -y;
+
+  gamescreen.left += x;
+  gamescreen.right += x;
+  gamescreen.top += y;
+  gamescreen.bottom += y;
+
   shiftAll(characters, xinv, yinv);
   shiftAll(solids, xinv, yinv);
   shiftAll(scenery, xinv, yinv);
   shiftAll(QuadsKeeper.getQuadrants(), xinv, yinv);
   shiftElements(texts, xinv, yinv);
   QuadsKeeper.updateQuadrants(xinv);
-  
-  if(window.playediting) scrollEditor(x, y);
+
+  if (window.playediting) scrollEditor(x, y);
 }
 function shiftAll(stuff, x, y) {
-  for(var i = stuff.length - 1; i >= 0; --i)
-      shiftBoth(stuff[i], x, y);
+  for (var i = stuff.length - 1; i >= 0; --i) shiftBoth(stuff[i], x, y);
 }
 function shiftElements(stuff, x, y) {
-  for(var i = stuff.length - 1, elem; i >= 0; --i) {
+  for (var i = stuff.length - 1, elem; i >= 0; --i) {
     elem = stuff[i];
     elementShiftLeft(elem, x);
     elementShiftTop(elem, y);
@@ -274,9 +289,9 @@ function shiftElements(stuff, x, y) {
 // Similar to scrollWindow, but saves the player's x-loc
 function scrollPlayer(x, y, see) {
   var saveleft = player.left,
-      savetop = player.top;
+    savetop = player.top;
   y = y || 0;
-  scrollWindow(x,y);
+  scrollWindow(x, y);
   setLeft(player, saveleft, see);
   setTop(player, savetop + y * unitsize, see);
   QuadsKeeper.updateQuadrants();
@@ -284,7 +299,7 @@ function scrollPlayer(x, y, see) {
 
 // Calls log if window.verbosity has the type enabled
 function mlog(type) {
-  if(verbosity[type]) {
+  if (verbosity[type]) {
     log.apply(console, arguments);
   }
 }

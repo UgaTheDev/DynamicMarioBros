@@ -9,20 +9,38 @@ window.GameRelationships = {
   init: function () {
     const saved = localStorage.getItem("fsm_relationships");
     if (saved) {
-      this.scores = JSON.parse(saved);
+      try {
+        this.scores = JSON.parse(saved);
+        console.log("✅ Relationships loaded from storage:", this.scores);
+      } catch (e) {
+        console.error("Failed to parse saved relationships:", e);
+        this.scores = { toad: 0, luigi: 0, peach: 0 };
+      }
+    } else {
+      console.log("✅ Relationships initialized (no saved data):", this.scores);
     }
-    console.log("✅ Relationships loaded:", this.scores);
   },
+
   update: function (character, delta) {
-    if (!["toad", "luigi", "peach"].includes(character)) {
-      console.error("❌ Unknown character:", character);
-      return;
-    }
-    if (!this.scores[character]) {
-      this.scores[character] = 0;
-      console.warn(
-        `⚠️ Character '${character}' was missing from scores. Initializing to 0.`
+    // Normalize to lowercase
+    character = character.toLowerCase();
+
+    // Debug log
+    console.log(
+      "Attempting to update:",
+      character,
+      "Current scores:",
+      this.scores
+    );
+
+    if (!this.scores.hasOwnProperty(character)) {
+      console.error(
+        "❌ Unknown character:",
+        character,
+        "Available:",
+        Object.keys(this.scores)
       );
+      return;
     }
 
     this.scores[character] = Math.max(
@@ -39,6 +57,7 @@ window.GameRelationships = {
   },
 
   get: function (character) {
+    character = character.toLowerCase();
     return this.scores[character] || 0;
   },
 
@@ -57,10 +76,11 @@ window.GameRelationships = {
   reset: function () {
     this.scores = { toad: 0, luigi: 0, peach: 0 };
     localStorage.removeItem("fsm_relationships");
-    console.log("🔄 Relationships reset");
+    console.log("🔄 Relationships reset:", this.scores);
   },
 
-  // Consequence modifiers
+  // CONSEQUENCE MODIFIERS
+
   getPlatformMultiplier: function () {
     const score = this.get("toad");
     if (score < -50) return 0.6;
@@ -75,7 +95,28 @@ window.GameRelationships = {
     if (score < -50) return 0.3;
     if (score < -30) return 0.5;
     if (score > 30) return 1.0;
+    if (score > 50) return 1.0;
     return 0.8;
+  },
+
+  getEnemyMultiplier: function () {
+    const score = this.get("toad");
+    if (score < -50) return 1.5;
+    if (score < -30) return 1.3;
+    if (score > 30) return 0.8;
+    if (score > 50) return 0.6;
+    return 1.0;
+  },
+
+  getEnemySpeedMultiplier: function () {
+    const score = this.get("toad");
+    if (score < -50) return 1.3;
+    if (score < -30) return 1.15;
+    return 1.0;
+  },
+
+  shouldEnemiesBeAggressive: function () {
+    return this.get("toad") < -30;
   },
 
   get1UpBonus: function () {
@@ -98,8 +139,20 @@ window.GameRelationships = {
   shouldPeachHelp: function () {
     return this.get("peach") > 30;
   },
+
+  shouldPeachBeAngry: function () {
+    return this.get("peach") < -30;
+  },
+
+  shouldUpgradeItems: function () {
+    return this.get("toad") > 50;
+  },
 };
 
-// Auto-initialize
-GameRelationships.init();
-console.log("✅ GameRelationships loaded");
+// Auto-initialize on load
+if (window.GameRelationships) {
+  window.GameRelationships.init();
+  console.log("✅ GameRelationships loaded and initialized");
+} else {
+  console.error("❌ GameRelationships failed to load!");
+}

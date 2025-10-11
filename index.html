@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <link href="default.css" rel="stylesheet" />
     <link href="Fonts/stylesheet.css" rel="stylesheet" />
-    <!-- ✨ ADD: Google Font for dialogue system -->
+    <!-- ✨ Google Font for dialogue system -->
     <link
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
       rel="stylesheet"
@@ -12,13 +12,58 @@
     <script src="ui.js"></script>
   </head>
   <body onload="start()">
+    <!-- Audio notice (click to enable sound) -->
+    <div
+      id="audio-notice"
+      style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.95);
+        color: white;
+        padding: 40px;
+        border: 4px solid white;
+        font-family: 'Press Start 2P', monospace;
+        text-align: center;
+        z-index: 9999999;
+        display: none;
+        max-width: 500px;
+      "
+    >
+      <div style="font-size: 24px; margin-bottom: 30px; color: #ffff00">
+        🔊 FULL SCREEN MARIO
+      </div>
+      <div style="font-size: 12px; margin-bottom: 30px; line-height: 1.8">
+        Click to enable sound and start the game
+      </div>
+      <button
+        onclick="dismissAudioNotice()"
+        style="
+          padding: 15px 40px;
+          background: #ff0000;
+          color: white;
+          border: 3px solid white;
+          font-family: 'Press Start 2P', monospace;
+          font-size: 14px;
+          cursor: pointer;
+        "
+        onmouseover="this.style.background='#cc0000'"
+        onmouseout="this.style.background='#ff0000'"
+      >
+        START GAME
+      </button>
+    </div>
+
     <!-- Top header -->
     <div id="header">
       <!-- <img id="beta" src="Theme/Beta.png"> -->
       <!-- <span id="version"></span> -->
     </div>
+
     <!-- Game itself -->
     <iframe id="game" src="mario.html"></iframe>
+
     <!-- After the game (retracts as needed) -->
     <div id="after">
       <!-- Level Editor popup -->
@@ -43,11 +88,7 @@
       </div>
     </div>
 
-    <!-- ✨ ADD: Your AI storytelling scripts -->
-    <!-- Note: These won't load properly in iframe context, so we'll add them to mario.html instead -->
-    <!-- See note below for correct implementation -->
-
-    <!-- ✨ ADD: Debug panel (press 'D' to toggle) -->
+    <!-- ✨ Debug panel (press 'D' to toggle) -->
     <div
       id="debug-panel"
       style="
@@ -62,24 +103,57 @@
         font-size: 10px;
         border: 3px solid white;
         display: none;
-        min-width: 200px;
+        min-width: 220px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       "
     >
-      <div style="margin-bottom: 10px; font-size: 12px; color: #ffff00">
+      <div
+        style="
+          margin-bottom: 10px;
+          font-size: 12px;
+          color: #ffff00;
+          text-align: center;
+        "
+      >
         <strong>🎮 RELATIONSHIPS</strong>
       </div>
-      <div style="margin: 5px 0">
+
+      <div
+        style="
+          margin: 8px 0;
+          padding: 5px;
+          background: rgba(255, 0, 0, 0.2);
+          border-left: 3px solid #ff0000;
+        "
+      >
         <span style="color: #ff0000">🍄 Toad:</span>
-        <span id="toad-score">0</span>
+        <span id="toad-score" style="float: right; font-weight: bold">0</span>
       </div>
-      <div style="margin: 5px 0">
+
+      <div
+        style="
+          margin: 8px 0;
+          padding: 5px;
+          background: rgba(0, 255, 0, 0.2);
+          border-left: 3px solid #00ff00;
+        "
+      >
         <span style="color: #00ff00">👨 Luigi:</span>
-        <span id="luigi-score">0</span>
+        <span id="luigi-score" style="float: right; font-weight: bold">0</span>
       </div>
-      <div style="margin: 5px 0">
+
+      <div
+        style="
+          margin: 8px 0;
+          padding: 5px;
+          background: rgba(255, 182, 193, 0.2);
+          border-left: 3px solid #ffb6c1;
+        "
+      >
         <span style="color: #ffb6c1">👑 Peach:</span>
-        <span id="peach-score">0</span>
+        <span id="peach-score" style="float: right; font-weight: bold">0</span>
       </div>
+
       <div
         style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #333"
       >
@@ -96,6 +170,8 @@
             font-size: 8px;
             cursor: pointer;
           "
+          onmouseover="this.style.background='#cc0000'"
+          onmouseout="this.style.background='#ff0000'"
         >
           Test Toad Scene
         </button>
@@ -113,6 +189,8 @@
             font-size: 8px;
             cursor: pointer;
           "
+          onmouseover="this.style.background='#00cc00'"
+          onmouseout="this.style.background='#00ff00'"
         >
           Test Luigi Scene
         </button>
@@ -130,6 +208,8 @@
             font-size: 8px;
             cursor: pointer;
           "
+          onmouseover="this.style.background='#ff9eb0'"
+          onmouseout="this.style.background='#ffb6c1'"
         >
           Test Peach Scene
         </button>
@@ -147,21 +227,69 @@
             font-size: 8px;
             cursor: pointer;
           "
+          onmouseover="this.style.background='#ff0000'; this.style.color='white'"
+          onmouseout="this.style.background='#333'; this.style.color='#ff0000'"
         >
           RESET ALL
         </button>
       </div>
+
+      <div
+        style="
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 2px solid #333;
+          text-align: center;
+          font-size: 8px;
+          color: #888;
+        "
+      >
+        Press 'D' to toggle
+      </div>
     </div>
 
-    <!-- ✨ ADD: Script to handle debug panel and iframe communication -->
+    <!-- ✨ Scripts for debug panel and iframe communication -->
     <script>
+      // Dismiss audio notice
+      function dismissAudioNotice() {
+        const notice = document.getElementById("audio-notice");
+        if (notice) {
+          notice.style.display = "none";
+        }
+
+        // Try to unmute/play audio in iframe
+        try {
+          const gameWindow = document.getElementById("game").contentWindow;
+          if (gameWindow && gameWindow.AudioPlayer) {
+            // Try to resume audio context
+            console.log("Attempting to enable audio...");
+          }
+        } catch (e) {
+          console.log("Audio permission granted");
+        }
+      }
+
+      // Show audio notice on first load
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          const notice = document.getElementById("audio-notice");
+          if (notice) {
+            notice.style.display = "block";
+          }
+        }, 1000);
+      });
+
       // Toggle debug panel with 'D' key
       document.addEventListener("keydown", function (e) {
         if (e.key === "d" || e.key === "D") {
           const panel = document.getElementById("debug-panel");
           if (panel) {
-            panel.style.display =
-              panel.style.display === "none" ? "block" : "none";
+            const isVisible = panel.style.display !== "none";
+            panel.style.display = isVisible ? "none" : "block";
+
+            if (!isVisible) {
+              console.log("🎮 Debug panel opened");
+            }
           }
         }
       });
@@ -174,9 +302,41 @@
 
           if (gameWindow && gameWindow.GameRelationships) {
             const scores = gameWindow.GameRelationships.getAll();
-            document.getElementById("toad-score").textContent = scores.toad;
-            document.getElementById("luigi-score").textContent = scores.luigi;
-            document.getElementById("peach-score").textContent = scores.peach;
+
+            // Update display
+            const toadEl = document.getElementById("toad-score");
+            const luigiEl = document.getElementById("luigi-score");
+            const peachEl = document.getElementById("peach-score");
+
+            if (toadEl) toadEl.textContent = scores.toad || 0;
+            if (luigiEl) luigiEl.textContent = scores.luigi || 0;
+            if (peachEl) peachEl.textContent = scores.peach || 0;
+
+            // Color code based on relationship
+            if (toadEl) {
+              toadEl.style.color =
+                scores.toad > 30
+                  ? "#00ff00"
+                  : scores.toad < -30
+                  ? "#ff0000"
+                  : "#ffffff";
+            }
+            if (luigiEl) {
+              luigiEl.style.color =
+                scores.luigi > 30
+                  ? "#00ff00"
+                  : scores.luigi < -30
+                  ? "#ff0000"
+                  : "#ffffff";
+            }
+            if (peachEl) {
+              peachEl.style.color =
+                scores.peach > 30
+                  ? "#00ff00"
+                  : scores.peach < -30
+                  ? "#ff0000"
+                  : "#ffffff";
+            }
           }
         } catch (e) {
           // Ignore errors (iframe might not be loaded yet)
@@ -189,7 +349,8 @@
         if (gameWindow && gameWindow.StoryTrigger) {
           gameWindow.StoryTrigger.test("toad");
         } else {
-          alert("Game not loaded yet or StoryTrigger not available");
+          alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
+          console.error("StoryTrigger not available in game window");
         }
       }
 
@@ -198,7 +359,8 @@
         if (gameWindow && gameWindow.StoryTrigger) {
           gameWindow.StoryTrigger.test("luigi");
         } else {
-          alert("Game not loaded yet or StoryTrigger not available");
+          alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
+          console.error("StoryTrigger not available in game window");
         }
       }
 
@@ -207,33 +369,75 @@
         if (gameWindow && gameWindow.StoryTrigger) {
           gameWindow.StoryTrigger.test("peach");
         } else {
-          alert("Game not loaded yet or StoryTrigger not available");
+          alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
+          console.error("StoryTrigger not available in game window");
         }
       }
 
       function resetRelationships() {
         const gameWindow = document.getElementById("game").contentWindow;
         if (gameWindow && gameWindow.GameRelationships) {
-          if (confirm("Reset all relationships to 0?")) {
+          if (
+            confirm(
+              "⚠️ Reset all relationships to 0?\n\nThis cannot be undone."
+            )
+          ) {
             gameWindow.GameRelationships.reset();
-            alert("All relationships reset!");
+            console.log("✅ All relationships reset to 0");
+
+            // Show confirmation
+            setTimeout(function () {
+              alert(
+                "✅ Relationships Reset!\n\nAll character relationships are now 0."
+              );
+            }, 100);
           }
         } else {
-          alert("Game not loaded yet");
+          alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
+          console.error("GameRelationships not available in game window");
         }
       }
 
-      // Show debug panel after 2 seconds (so users know it exists)
-      setTimeout(function () {
-        const panel = document.getElementById("debug-panel");
-        if (panel) {
-          panel.style.display = "block";
-          // Auto-hide after 3 seconds
-          setTimeout(function () {
-            panel.style.display = "none";
-          }, 3000);
-        }
-      }, 2000);
+      // Show debug panel briefly after game loads (so users know it exists)
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          const panel = document.getElementById("debug-panel");
+          if (panel) {
+            panel.style.display = "block";
+            console.log('💡 Tip: Press "D" key to toggle debug panel');
+
+            // Auto-hide after 4 seconds
+            setTimeout(function () {
+              panel.style.display = "none";
+            }, 4000);
+          }
+        }, 3000); // Show after 3 seconds (game should be loaded)
+      });
+
+      // Console helper functions
+      console.log(
+        "%c🎮 Full Screen Mario - AI Storytelling Edition",
+        "color: #ff0000; font-size: 16px; font-weight: bold;"
+      );
+      console.log(
+        "%cDebug Commands:",
+        "color: #00ff00; font-size: 14px; font-weight: bold;"
+      );
+      console.log("  Press D key - Toggle debug panel");
+      console.log("  testToad() - Test Toad story scene");
+      console.log("  testLuigi() - Test Luigi story scene");
+      console.log("  testPeach() - Test Peach story scene");
+      console.log("  resetRelationships() - Reset all scores to 0");
+      console.log(
+        "%cGame Window Access:",
+        "color: #00ff00; font-size: 14px; font-weight: bold;"
+      );
+      console.log(
+        '  const game = document.getElementById("game").contentWindow;'
+      );
+      console.log('  game.GameRelationships.update("toad", 50)');
+      console.log("  game.GameRelationships.getAll()");
+      console.log('  game.StoryTrigger.test("toad")');
     </script>
   </body>
 </html>
