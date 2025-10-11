@@ -67,11 +67,12 @@ function TimeHandlr(settings) {
     // Create the event, keeping track of start and end times
     var event = {
       func: func,
-      time_exec: time + time_exec,
+      time_exec: time - time_exec, // fire when countdown reaches this
       time_repeat: time_exec,
       args: args,
       repeat: 1
     };
+insertEvent(event, event.time_exec);
     
     // Add the event to events, then return it
     insertEvent(event, event.time_exec);
@@ -99,7 +100,7 @@ function TimeHandlr(settings) {
     // Create the event, keeping track of start and end times, and repetitions
     var event = {
       func: func,
-      time_exec: time + time_exec,
+      time_exec: time - time_exec,
       time_repeat: time_exec,
       args: args,
       repeat: num_repeats
@@ -294,7 +295,7 @@ function TimeHandlr(settings) {
   // Public: handleEvents
   // Increments time and runs all events at the new events[time]
   this.handleEvents = function() {
-    ++time;
+    --time;  // instead of ++time
     var events_current = events[time];
     if(!events_current) return; // If there isn't anything to run, don't even bother
     
@@ -321,7 +322,7 @@ function TimeHandlr(settings) {
         }
         // Otherwise it's a number: decrement it, and if it's > 0, repeat.
         else if(--event.repeat > 0) {
-          event.time_exec += event.time_repeat;
+          event.time_exec -= event.time_repeat;
           insertEvent(event, event.time_exec);
         }
       }
