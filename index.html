@@ -1,54 +1,239 @@
-<!DOCTYPE HTML>
-
+<!DOCTYPE html>
 <html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <link href="default.css" rel="stylesheet" />
+    <link href="Fonts/stylesheet.css" rel="stylesheet" />
+    <!-- ✨ ADD: Google Font for dialogue system -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <script src="ui.js"></script>
+  </head>
+  <body onload="start()">
+    <!-- Top header -->
+    <div id="header">
+      <!-- <img id="beta" src="Theme/Beta.png"> -->
+      <!-- <span id="version"></span> -->
+    </div>
+    <!-- Game itself -->
+    <iframe id="game" src="mario.html"></iframe>
+    <!-- After the game (retracts as needed) -->
+    <div id="after">
+      <!-- Level Editor popup -->
+      <div id="out_editor" class="bar1">
+        <div class="label">- Level Editor -</div>
+        <div id="in_editor" class="expander"></div>
+      </div>
+      <!-- Map Selector popup -->
+      <div id="out_mapselect" class="bar1">
+        <div class="label">- Map Select -</div>
+        <div id="in_mapselect" class="expander"></div>
+      </div>
+      <!-- Options popup -->
+      <div id="out_options" class="bar1">
+        <div class="label">- Options -</div>
+        <div id="in_options" class="expander"></div>
+      </div>
+      <!-- Key Mapping popup -->
+      <div id="out_keymapping" class="bar1">
+        <div class="label">- Keys Mapping -</div>
+        <div id="in_keymapping" class="expander"></div>
+      </div>
+    </div>
 
-<head>
-	<meta charset="utf-8">
-  <link href="default.css" rel="stylesheet">
-  <link href="Fonts/stylesheet.css" rel="stylesheet">
-	<script src="ui.js"></script>
-</head>
+    <!-- ✨ ADD: Your AI storytelling scripts -->
+    <!-- Note: These won't load properly in iframe context, so we'll add them to mario.html instead -->
+    <!-- See note below for correct implementation -->
 
-<body onload="start()">
-  
-  <!-- Top header -->
-  <div id="header">
-    <!-- <img id="beta" src="Theme/Beta.png"> -->
-    <!-- <span id="version"></span> -->
-  </div>
-  
-  <!-- Game itself -->
-  <iframe id="game" src="mario.html"></iframe>
-  
-  <!-- After the game (retracts as needed) -->
-  <div id="after">
-  
-    <!-- Level Editor popup -->
-    <div id="out_editor" class="bar1">
-      <div class="label">- Level Editor -</div>
-      <div id="in_editor" class="expander"></div>
-    </div>
-    
-    <!-- Map Selector popup -->
-    <div id="out_mapselect" class="bar1">
-      <div class="label">- Map Select -</div>
-      <div id="in_mapselect" class="expander"></div>
-    </div>
-    
-    <!-- Options popup -->
-    <div id="out_options" class="bar1">
-      <div class="label">- Options -</div>
-      <div id="in_options" class="expander"></div>
-    </div>
-    
-    <!-- Key Mapping popup -->
-    <div id="out_keymapping" class="bar1">
-      <div class="label">- Keys Mapping -</div>
-      <div id="in_keymapping" class="expander"></div>
-    </div>
-    
-  </div>
-  
-</body>
+    <!-- ✨ ADD: Debug panel (press 'D' to toggle) -->
+    <div
+      id="debug-panel"
+      style="
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.95);
+        color: white;
+        padding: 15px;
+        z-index: 999999;
+        font-family: 'Press Start 2P', monospace;
+        font-size: 10px;
+        border: 3px solid white;
+        display: none;
+        min-width: 200px;
+      "
+    >
+      <div style="margin-bottom: 10px; font-size: 12px; color: #ffff00">
+        <strong>🎮 RELATIONSHIPS</strong>
+      </div>
+      <div style="margin: 5px 0">
+        <span style="color: #ff0000">🍄 Toad:</span>
+        <span id="toad-score">0</span>
+      </div>
+      <div style="margin: 5px 0">
+        <span style="color: #00ff00">👨 Luigi:</span>
+        <span id="luigi-score">0</span>
+      </div>
+      <div style="margin: 5px 0">
+        <span style="color: #ffb6c1">👑 Peach:</span>
+        <span id="peach-score">0</span>
+      </div>
+      <div
+        style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #333"
+      >
+        <button
+          onclick="testToad()"
+          style="
+            width: 100%;
+            margin: 3px 0;
+            padding: 8px;
+            background: #ff0000;
+            color: white;
+            border: 2px solid white;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            cursor: pointer;
+          "
+        >
+          Test Toad Scene
+        </button>
 
+        <button
+          onclick="testLuigi()"
+          style="
+            width: 100%;
+            margin: 3px 0;
+            padding: 8px;
+            background: #00ff00;
+            color: white;
+            border: 2px solid white;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            cursor: pointer;
+          "
+        >
+          Test Luigi Scene
+        </button>
+
+        <button
+          onclick="testPeach()"
+          style="
+            width: 100%;
+            margin: 3px 0;
+            padding: 8px;
+            background: #ffb6c1;
+            color: white;
+            border: 2px solid white;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            cursor: pointer;
+          "
+        >
+          Test Peach Scene
+        </button>
+
+        <button
+          onclick="resetRelationships()"
+          style="
+            width: 100%;
+            margin: 10px 0 0 0;
+            padding: 8px;
+            background: #333;
+            color: #ff0000;
+            border: 2px solid #ff0000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            cursor: pointer;
+          "
+        >
+          RESET ALL
+        </button>
+      </div>
+    </div>
+
+    <!-- ✨ ADD: Script to handle debug panel and iframe communication -->
+    <script>
+      // Toggle debug panel with 'D' key
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "d" || e.key === "D") {
+          const panel = document.getElementById("debug-panel");
+          if (panel) {
+            panel.style.display =
+              panel.style.display === "none" ? "block" : "none";
+          }
+        }
+      });
+
+      // Update scores display every 500ms
+      setInterval(function () {
+        try {
+          // Access the iframe's window
+          const gameWindow = document.getElementById("game").contentWindow;
+
+          if (gameWindow && gameWindow.GameRelationships) {
+            const scores = gameWindow.GameRelationships.getAll();
+            document.getElementById("toad-score").textContent = scores.toad;
+            document.getElementById("luigi-score").textContent = scores.luigi;
+            document.getElementById("peach-score").textContent = scores.peach;
+          }
+        } catch (e) {
+          // Ignore errors (iframe might not be loaded yet)
+        }
+      }, 500);
+
+      // Test functions that communicate with iframe
+      function testToad() {
+        const gameWindow = document.getElementById("game").contentWindow;
+        if (gameWindow && gameWindow.StoryTrigger) {
+          gameWindow.StoryTrigger.test("toad");
+        } else {
+          alert("Game not loaded yet or StoryTrigger not available");
+        }
+      }
+
+      function testLuigi() {
+        const gameWindow = document.getElementById("game").contentWindow;
+        if (gameWindow && gameWindow.StoryTrigger) {
+          gameWindow.StoryTrigger.test("luigi");
+        } else {
+          alert("Game not loaded yet or StoryTrigger not available");
+        }
+      }
+
+      function testPeach() {
+        const gameWindow = document.getElementById("game").contentWindow;
+        if (gameWindow && gameWindow.StoryTrigger) {
+          gameWindow.StoryTrigger.test("peach");
+        } else {
+          alert("Game not loaded yet or StoryTrigger not available");
+        }
+      }
+
+      function resetRelationships() {
+        const gameWindow = document.getElementById("game").contentWindow;
+        if (gameWindow && gameWindow.GameRelationships) {
+          if (confirm("Reset all relationships to 0?")) {
+            gameWindow.GameRelationships.reset();
+            alert("All relationships reset!");
+          }
+        } else {
+          alert("Game not loaded yet");
+        }
+      }
+
+      // Show debug panel after 2 seconds (so users know it exists)
+      setTimeout(function () {
+        const panel = document.getElementById("debug-panel");
+        if (panel) {
+          panel.style.display = "block";
+          // Auto-hide after 3 seconds
+          setTimeout(function () {
+            panel.style.display = "none";
+          }, 3000);
+        }
+      }, 2000);
+    </script>
+  </body>
 </html>
