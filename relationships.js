@@ -55,6 +55,7 @@ window.GameRelationships = {
     console.log("🔄 Relationships reset");
   },
 
+  // Consequence modifiers
   getPlatformMultiplier: function () {
     const score = this.get("toad");
     if (score < -50) return 0.6;
