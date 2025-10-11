@@ -6,7 +6,7 @@
     <link href="mario.css" rel="stylesheet" />
     <link href="Fonts/stylesheet.css" rel="stylesheet" />
 
-    <!-- ✨ ADD: Google Font for dialogue system -->
+    <!-- ✨ Google Font for dialogue system -->
     <link
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
       rel="stylesheet"
@@ -33,11 +33,31 @@
     <script src="src/TimeHandlr/TimeHandlr.js"></script>
     <script src="src/QuadsKeepr/QuadsKeepr.js"></script>
 
-    <!-- ✨ ADD: Your AI storytelling scripts -->
+    <!-- ✨ Your AI storytelling scripts -->
     <script src="relationships.js"></script>
     <script src="dialogue.js"></script>
     <script src="map_modifier.js"></script>
     <script src="story_trigger.js"></script>
   </head>
-  <body onload="FullScreenMario()"></body>
+  <body onload="FullScreenMario()">
+    <!-- ✨ Relationship Message Box for in-game popups -->
+    <div
+      id="relationship-message"
+      style="
+        position: fixed;
+        top: 28px;
+        left: 0;
+        width: 100vw;
+        text-align: center;
+        font-size: 2em;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 18px 0;
+        z-index: 20000;
+        font-family: 'Press Start 2P', monospace;
+        display: none;
+        pointer-events: none;
+      "
+    ></div>
+  </body>
 </html>
