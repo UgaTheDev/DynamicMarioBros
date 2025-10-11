@@ -47,6 +47,7 @@ window.GameRelationships = {
       -100,
       Math.min(100, this.scores[character] + delta)
     );
+
     localStorage.setItem("fsm_relationships", JSON.stringify(this.scores));
 
     console.log(
@@ -65,6 +66,36 @@ window.GameRelationships = {
     return { ...this.scores };
   },
 
+  /**
+   * Get the status of a specific character
+   * Returns: 'allied', 'enemy', or 'neutral'
+   */
+  getCharacterStatus: function (character) {
+    const score = this.get(character);
+
+    if (score >= 30) {
+      return "allied";
+    } else if (score <= -30) {
+      return "enemy";
+    } else {
+      return "neutral";
+    }
+  },
+
+  /**
+   * Get all character statuses as an object
+   * Returns: { toad: 'allied', luigi: 'enemy', peach: 'neutral' }
+   */
+  getAllStatuses: function () {
+    const statuses = {};
+
+    for (const character in this.scores) {
+      statuses[character] = this.getCharacterStatus(character);
+    }
+
+    return statuses;
+  },
+
   isHostile: function (character) {
     return this.get(character) < -30;
   },
@@ -80,7 +111,6 @@ window.GameRelationships = {
   },
 
   // CONSEQUENCE MODIFIERS
-
   getPlatformMultiplier: function () {
     const score = this.get("toad");
     if (score < -50) return 0.6;
