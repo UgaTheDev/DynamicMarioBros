@@ -13,11 +13,16 @@ window.GameRelationships = {
     }
     console.log("✅ Relationships loaded:", this.scores);
   },
-
   update: function (character, delta) {
-    if (!this.scores[character]) {
+    if (!["toad", "luigi", "peach"].includes(character)) {
       console.error("❌ Unknown character:", character);
       return;
+    }
+    if (!this.scores[character]) {
+      this.scores[character] = 0;
+      console.warn(
+        `⚠️ Character '${character}' was missing from scores. Initializing to 0.`
+      );
     }
 
     this.scores[character] = Math.max(
