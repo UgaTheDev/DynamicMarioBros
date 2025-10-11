@@ -1,9 +1,35 @@
 const MapModifier = {
   originalMapStates: {},
   activeModifications: {},
+  // Tracks if the global Block prototype has been modified
+  isBlockHitOverridden: false,
+  // Tracks if the global addThing function has been modified
+  isAddThingOverridden: false,
+
   clearCurrentModifications() {
     console.log("🧹 Clearing modifications for level transition");
+    // --- CRITICAL RESTORATION LOGIC ---
     this.disableDoubleCoinChance();
+    this.restoreBlockHitBehavior();
+    this.restoreGoombaSuppression(); // <-- Ensures Goombas can spawn again in the next level
+    // -----------------------------------
+
+    // --- LOGIC: Ensure relationship status does not carry over to the next level ---
+    if (window.GameRelationships && GameRelationships.setStatus) {
+      // Forcefully reset character statuses to 'neutral' for the next level.
+      GameRelationships.setStatus("toad", "neutral");
+      GameRelationships.setStatus("goomba", "neutral");
+      GameRelationships.setStatus("koopa", "neutral");
+      console.log("🔄 Relationship statuses reset to neutral for next level.");
+    } else {
+      console.warn(
+        "⚠️ Cannot reset GameRelationships status externally. Next level might inherit previous modifications."
+      );
+    }
+
+    // Clear internal modification state to prevent accidental persistence of flags
+    this.activeModifications = {};
+    // ------------------------------------------------------------------------------------
   },
   init() {
     console.log("🗺️ Map Modifier initialized");
@@ -16,6 +42,7 @@ const MapModifier = {
       window.setMapOriginal = window.setMap;
       window.setMap = function () {
         console.log("🗺️ setMap called - new level loading");
+        // This runs the cleanup before the new level finishes loading
         MapModifier.clearCurrentModifications();
         const result = setMapOriginal.apply(this, arguments);
         return result;
@@ -32,24 +59,44 @@ const MapModifier = {
         box.style.display = "none";
       }, 2500);
     } else {
-      alert(msg);
+      console.log(msg);
     }
   },
+  // --- CONSOLIDATED DIALOGUES ---
   showToadHelpMessage() {
     this._showRelationshipMessage(
-      "🍄 Toad: You are now allied! Mushrooms incoming! You now have a chance for coins to double drop!"
+      "🍄 Allied Toad: Mushrooms incoming! You now have a chance for coins to double drop!"
     );
   },
-  showLuigiHelpMessage() {
+  showToadEnemyMessage() {
     this._showRelationshipMessage(
-      "👨 Luigi: You are now allied! Platforms and springs appear!"
+      "😈 Enemy Toad: Treasures are mine! Expect traps and suppressed rewards!"
     );
   },
-  showPeachHelpMessage() {
+  // NEW GOOMBA DIALOGUES
+  showGoombaHelpMessage() {
     this._showRelationshipMessage(
-      "👑 Peach: You are now allied! Hidden secrets revealed!"
+      "🟢 Allied Goomba: Your enemy is my enemy! Goombas cleared!"
     );
   },
+  showGoombaEnemyMessage() {
+    this._showRelationshipMessage(
+      "🔴 Enemy Goomba: We're multiplying! Face our sheer numbers!"
+    );
+  },
+  // NEW KOOPA DIALOGUES
+  showKoopaHelpMessage() {
+    this._showRelationshipMessage(
+      "🐢 Allied Koopa: Secrets revealed and extra boost power!"
+    );
+  },
+  showKoopaEnemyMessage() {
+    this._showRelationshipMessage(
+      "⚫ Enemy Koopa: Reinforcements and hidden obstacles deployed!"
+    );
+  },
+  // --- END DIALOGUES ---
+
   hookIntoSpawnMap() {
     if (!window.spawnMapOriginal && window.spawnMap) {
       window.spawnMapOriginal = window.spawnMap;
@@ -137,11 +184,11 @@ const MapModifier = {
       case "toad":
         this.applyToadModifications(levelKey, status);
         break;
-      case "luigi":
-        this.applyLuigiModifications(levelKey, status);
+      case "goomba":
+        this.applyGoombaModifications(levelKey, status);
         break;
-      case "peach":
-        this.applyPeachModifications(levelKey, status);
+      case "koopa":
+        this.applyKoopaModifications(levelKey, status);
         break;
     }
     this.activeModifications[modKey] = true;
@@ -153,48 +200,235 @@ const MapModifier = {
       setTimeout(() => {
         this.addPowerUps(levelKey, "mushroom", 3);
       }, 2000);
-      this.doubleQuestionBlocks(levelKey);
+      this.convertBricksToQuestionBlocks(levelKey, 5);
       this.enableDoubleCoinChance();
     } else if (status === "enemy") {
-      console.log("🍄 Toad is enemy - making level harder");
-      this.addEnemies(levelKey, "goomba", 3);
+      console.log("😈 Enemy Toad activated: Applying traps and removals.");
+      this.showToadEnemyMessage();
+
+      this.setupDeadlyBlockSuppression();
+
+      // Difficulty increases
+      this.addEnemies(levelKey, "goomba", 8);
+      this.spawnFastEnemies(levelKey, "koopa", 2);
+
+      // Reward removals (Power-up suppression)
+      this.removeExistingPowerUps(levelKey, Infinity);
       this.disableDoubleCoinChance();
     }
   },
-  applyLuigiModifications(levelKey, status) {
+
+  // GOOMBA MODIFICATIONS
+  applyGoombaModifications(levelKey, status) {
     if (status === "allied") {
-      console.log("👻 Luigi is allied - adding high platforms");
-      this.showLuigiHelpMessage();
-      this.addHighPlatforms(levelKey, "luigi");
+      console.log(
+        "🟢 Allied Goomba: Removing local threats and adding rewards."
+      );
+      this.showGoombaHelpMessage();
+      this.removeEnemies(levelKey, "goomba", Infinity); // Remove all existing goombas
+      this.setupGoombaSuppression(); // <-- Block future goombas from spawning in THIS level
+      this.addPowerUps(levelKey, "fireflower", 2);
+    } else if (status === "enemy") {
+      console.log("🔴 Enemy Goomba: Massing forces!");
+      this.showGoombaEnemyMessage();
+      this.addEnemies(levelKey, "goomba", 10);
+      this.spreadPlatforms(levelKey); // Make jumps harder
+    }
+  },
+
+  // KOOPA MODIFICATIONS
+  applyKoopaModifications(levelKey, status) {
+    if (status === "allied") {
+      console.log("🐢 Allied Koopa: Revealing secrets and providing bounce!");
+      this.showKoopaHelpMessage();
+      this.revealHiddenBlocks(levelKey, 3);
       this.addSprings(levelKey, 2);
       this.addHighCoins(levelKey, 5);
     } else if (status === "enemy") {
-      console.log("👻 Luigi is enemy - making jumps harder");
-      this.spreadPlatforms(levelKey);
-      this.addEnemies(levelKey, "koopa", 2);
-      this.removeSprings(levelKey);
-    }
-  },
-  applyPeachModifications(levelKey, status) {
-    if (status === "allied") {
-      console.log("👑 Peach is allied - revealing secrets");
-      this.showPeachHelpMessage();
-      this.revealHiddenBlocks(levelKey, 3);
-      this.addBonusCoins(levelKey, 10);
-      this.addPowerUps(levelKey, "star", 1);
-    } else if (status === "enemy") {
-      console.log("👑 Peach is enemy - hiding rewards");
-      this.hideBlocks(levelKey, 2);
-      this.removeCoins(levelKey, 5);
+      console.log("⚫ Enemy Koopa: Traps and reinforcements active.");
+      this.showKoopaEnemyMessage();
+      this.addEnemies(levelKey, "koopa", 5);
+      this.hideBlocks(levelKey, 3);
       this.addFalseBlocks(levelKey, 2);
     }
   },
-  doubleQuestionBlocks(levelKey) {
-    console.log(`❓ Doubling the number of ? blocks`);
-    const existingBlocks = solids.filter(
-      (s) => s.name === "Block" && !s.used && s.left > 100 && s.left < 2000
+
+  // *** Global AddThing Behavior Override for Goomba Suppression ***
+  setupGoombaSuppression() {
+    if (typeof window.addThing !== "function" || this.isAddThingOverridden) {
+      return;
+    }
+
+    window.addThingOriginal = window.addThing;
+
+    window.addThing = function (thing, x, y) {
+      // Check if Goomba is allied and the thing being added is a Goomba
+      if (
+        window.GameRelationships &&
+        window.GameRelationships.isAllied &&
+        window.GameRelationships.isAllied("goomba") &&
+        window.Goomba &&
+        thing instanceof window.Goomba
+      ) {
+        console.log(
+          "🟢 Allied Goomba: Suppression engaged. Blocking Goomba spawn."
+        );
+        // Do NOT call addThingOriginal, effectively preventing the object from being added to the game arrays.
+        return;
+      }
+
+      // Otherwise, run the original function
+      window.addThingOriginal.call(this, thing, x, y);
+    };
+
+    this.isAddThingOverridden = true;
+    console.log("✅ Global addThing behavior overridden for Allied Goomba.");
+  },
+
+  // *** Restore AddThing Behavior ***
+  restoreGoombaSuppression() {
+    if (window.addThingOriginal && this.isAddThingOverridden) {
+      window.addThing = window.addThingOriginal;
+      delete window.addThingOriginal;
+      this.isAddThingOverridden = false;
+      console.log(
+        "✅ addThing behavior restored. Goombas can spawn in the next level."
+      );
+    }
+  },
+
+  // *** Global Block Hit Behavior Override for Mushroom Suppression ***
+  setupDeadlyBlockSuppression() {
+    if (!window.Block || this.isBlockHitOverridden) {
+      return;
+    }
+
+    // Backup the original hit function
+    window.Block.prototype.hitOriginal = window.Block.prototype.hit;
+
+    // Define the new overridden hit function
+    window.Block.prototype.hit = function (thing) {
+      // Check if Toad is currently an enemy AND the block has contents (i.e., a ? block)
+      if (
+        window.GameRelationships &&
+        window.GameRelationships.isEnemy &&
+        window.GameRelationships.isEnemy("toad") &&
+        this.contents &&
+        this.contents.length > 0
+      ) {
+        // Check if the contents includes a non-coin power-up (Mushroom, FireFlower, or Star)
+        const isPowerUpBlock = this.contents.some((content) => {
+          return (
+            content === window.Mushroom ||
+            content === window.FireFlower ||
+            content === window.Star
+          );
+        });
+
+        if (isPowerUpBlock && typeof window.Coin !== "undefined") {
+          console.log(
+            "😈 Enemy Toad: Power-up suppression engaged. Dropping only a coin."
+          );
+          // Temporarily force contents to be Coin before calling the original hit logic
+          const originalContents = this.contents;
+          this.contents = [window.Coin, false, false];
+
+          // Call the original hit logic
+          window.Block.prototype.hitOriginal.call(this, thing);
+
+          // Restore original contents after hit is complete
+          this.contents = originalContents;
+          return;
+        }
+      }
+
+      // If not an enemy or not a power-up block, call the original hit logic
+      window.Block.prototype.hitOriginal.call(this, thing);
+    };
+
+    this.isBlockHitOverridden = true;
+    console.log("✅ Global Block.hit behavior overridden for Enemy Toad.");
+  },
+
+  // *** Restore Block Hit Behavior ***
+  restoreBlockHitBehavior() {
+    if (
+      window.Block &&
+      window.Block.prototype.hitOriginal &&
+      this.isBlockHitOverridden
+    ) {
+      window.Block.prototype.hit = window.Block.prototype.hitOriginal;
+      delete window.Block.prototype.hitOriginal;
+      this.isBlockHitOverridden = false;
+      console.log("✅ Block.hit behavior restored.");
+    }
+  },
+
+  removeExistingPowerUps(levelKey, count) {
+    // Note: count is now Infinity when Toad is an enemy
+    console.log(
+      `🍄 Removing up to ${count} existing power-ups from the level.`
     );
-    console.log(`Found ${existingBlocks.length} existing ? blocks`);
+    const powerUps = characters.filter(
+      (c) =>
+        c.alive &&
+        !c.relationshipTag &&
+        (c.name === "Mushroom" || c.name === "FireFlower" || c.name === "Star")
+    );
+
+    const removeCount = Math.min(count, powerUps.length);
+    if (removeCount > 0) {
+      console.log(
+        `Found ${powerUps.length} power-ups. Removing ${removeCount}.`
+      );
+      for (let i = 0; i < removeCount; i++) {
+        this.removeObject(powerUps[i]);
+      }
+    } else {
+      console.log("No visible power-ups found to remove.");
+    }
+  },
+
+  // HELPER: Remove enemies from the current map
+  removeEnemies(levelKey, enemyType, count) {
+    console.log(`🗑️ Removing up to ${count} ${enemyType} enemies.`);
+    const enemiesToRemove = window.characters
+      .filter(
+        (c) =>
+          c.alive &&
+          !c.relationshipTag &&
+          c.name && // <-- Safely check for name property
+          c.name.toLowerCase() === enemyType.toLowerCase()
+      )
+      .slice(0, count);
+
+    if (enemiesToRemove.length > 0) {
+      console.log(`Found ${enemiesToRemove.length} ${enemyType}s to remove.`);
+      enemiesToRemove.forEach((enemy) => this.removeObject(enemy));
+    } else {
+      console.log(`No existing ${enemyType}s found to remove.`);
+    }
+  },
+
+  // Spawning faster enemies
+  spawnFastEnemies(levelKey, enemyType, count) {
+    console.log(`🚀 Enemy Toad: Spawning ${count} fast ${enemyType}s!`);
+    const positions = this.getEnemySpawnPositions(levelKey, count);
+    positions.forEach((pos) => {
+      const enemy = this.spawnEnemy(enemyType, pos.x, pos.y, `toad_fast_enemy`);
+      if (enemy) {
+        if (enemy.walking && enemy.walking.speed) {
+          enemy.walking.speed *= 1.5; // Make them 50% faster
+          console.log(`⚡ ${enemyType} at x=${enemy.left} now faster!`);
+        }
+      }
+    });
+  },
+  // Renamed function to clarify it modifies existing Bricks
+  convertBricksToQuestionBlocks(levelKey, count) {
+    console.log(`❓ Converting existing bricks to ? blocks for bonus rewards.`);
+
+    // Find all eligible Brick solids to modify
     const bricksToConvert = solids.filter(
       (s) =>
         s.name === "Brick" &&
@@ -203,11 +437,11 @@ const MapModifier = {
         s.left > 100 &&
         s.left < 2000
     );
-    const convertCount = Math.min(
-      existingBlocks.length,
-      bricksToConvert.length
-    );
+
+    // Convert all eligible bricks (removing the confusing Math.min logic)
+    const convertCount = bricksToConvert.length;
     console.log(`Converting ${convertCount} bricks to ? blocks`);
+
     for (let i = 0; i < convertCount; i++) {
       const brick = bricksToConvert[i];
       brick.relationshipModified = true;
@@ -283,9 +517,6 @@ const MapModifier = {
     positions.forEach((pos) => {
       this.spawnPowerUp(type, pos.x, pos.y, `relationship_powerup`);
     });
-    if (type === "mushroom") {
-      this.showToadHelpMessage();
-    }
   },
   addSprings(levelKey, count) {
     console.log(`🦘 Adding ${count} springs`);
@@ -324,7 +555,7 @@ const MapModifier = {
     blocks.forEach((block) => this.makeBlockVisible(block));
   },
   hideBlocks(levelKey, count) {
-    console.log(`📦 Hiding ${count} blocks`);
+    console.log(`🫥 Hiding ${count} blocks`);
     const blocks = this.findVisibleBlocks(levelKey).slice(0, count);
     blocks.forEach((block) => this.makeBlockHidden(block));
   },
@@ -334,68 +565,6 @@ const MapModifier = {
     positions.forEach((pos) => {
       this.createFalseBlock(pos.x, pos.y, `relationship_false`);
     });
-  },
-  getHelpfulPlatformPositions(levelKey) {
-    return [
-      { x: 200, y: 64, width: 64 },
-      { x: 350, y: 64, width: 64 },
-      { x: 500, y: 56, width: 64 },
-    ];
-  },
-  getHighPlatformPositions(levelKey) {
-    return [
-      { x: 250, y: 40, width: 64 },
-      { x: 450, y: 32, width: 64 },
-    ];
-  },
-  getEnemySpawnPositions(levelKey, count) {
-    const floorY = 88;
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 220 + i * 180,
-        y: floorY,
-      }));
-  },
-  getPowerUpPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 240 + i * 140,
-        y: 72,
-      }));
-  },
-  getSpringPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 450 + i * 200,
-        y: 450,
-      }));
-  },
-  getCoinPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 300 + i * 50,
-        y: 380,
-      }));
-  },
-  getHighCoinPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 400 + i * 60,
-        y: 200,
-      }));
-  },
-  getBlockPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 400 + i * 100,
-        y: 300,
-      }));
   },
   findHiddenBlocks(levelKey) {
     console.log("🔍 Finding hidden blocks...");
@@ -481,6 +650,9 @@ const MapModifier = {
         break;
       case "koopa":
         enemy = new Thing(Koopa, false);
+        break;
+      case "pidget":
+        enemy = new Thing(Pidget);
         break;
       default:
         console.warn(`Unknown enemy type: ${type}`);
@@ -588,11 +760,14 @@ const MapModifier = {
       "relationship_high_coin",
       "relationship_false",
       "toad_helpful",
-      "luigi_high",
+      "toad_fast_enemy",
     ].forEach((tag) => {
       const objects = this.findObjectsByTag(tag);
       objects.forEach((obj) => this.removeObject(obj));
     });
+    // Reset any blocks that were modified by Goomba/Koopa relationship logic
+    // We don't track modified blocks specifically, so general tag removal is key.
+
     this.allowDeletion = false;
     Object.keys(this.activeModifications).forEach((key) => {
       if (key.startsWith(levelKey)) {
@@ -610,6 +785,124 @@ const MapModifier = {
       modifications: active,
     };
   },
+  // --- Position Helpers (Kept generic, no changes needed) ---
+  getHelpfulPlatformPositions(levelKey) {
+    return [
+      { x: 200, y: 64, width: 64 },
+      { x: 350, y: 64, width: 64 },
+      { x: 500, y: 56, width: 64 },
+    ];
+  },
+  getHighPlatformPositions(levelKey) {
+    return [
+      { x: 250, y: 40, width: 64 },
+      { x: 450, y: 32, width: 64 },
+    ];
+  },
+  getEnemySpawnPositions(levelKey, count) {
+    const floorY = 88;
+    return Array(count)
+      .fill(null)
+      .map((_, i) => ({
+        x: 220 + i * 180,
+        y: floorY,
+      }));
+  },
+  getPowerUpPositions(levelKey, count) {
+    return Array(count)
+      .fill(null)
+      .map((_, i) => ({
+        x: 240 + i * 140,
+        y: 72,
+      }));
+  },
+  getSpringPositions(levelKey, count) {
+    return Array(count)
+      .fill(null)
+      .map((_, i) => ({
+        x: 450 + i * 200,
+        y: 450,
+      }));
+  },
+  getCoinPositions(levelKey, count) {
+    return Array(count)
+      .fill(null)
+      .map((_, i) => ({
+        x: 300 + i * 50,
+        y: 380,
+      }));
+  },
+  getHighCoinPositions(levelKey, count) {
+    return Array(count)
+      .fill(null)
+      .map((_, i) => ({
+        x: 400 + i * 60,
+        y: 200,
+      }));
+  },
+  getBlockPositions(levelKey, count) {
+    return Array(count)
+      .fill(null)
+      .map((_, i) => ({
+        x: 400 + i * 100,
+        y: 300,
+      }));
+  },
+  // --- End Position Helpers ---
+
+  // --- Utility for testing/debugging (Bypassing direct GameRelationships calls) ---
+  testSetStatus(character, status) {
+    if (window.GameRelationships && GameRelationships.setStatus) {
+      GameRelationships.setStatus(character, status);
+      console.log(
+        `🕹️ TEST: Set ${character} status to ${status}. Modifications will now apply.`
+      );
+    } else {
+      console.error(
+        "GameRelationships object not available for testing status."
+      );
+    }
+  },
+
+  // ALLY COMMANDS
+  allyGoomba() {
+    this.testSetStatus("goomba", "allied");
+    this.applyModifications("current");
+  },
+
+  allyKoopa() {
+    this.testSetStatus("koopa", "allied");
+    this.applyModifications("current");
+  },
+
+  allyToad() {
+    this.testSetStatus("toad", "allied");
+    this.applyModifications("current");
+  },
+
+  // ENEMY COMMANDS
+  enemyToad() {
+    this.testSetStatus("toad", "enemy");
+    this.applyModifications("current");
+  },
+
+  enemyGoomba() {
+    this.testSetStatus("goomba", "enemy");
+    this.applyModifications("current");
+  },
+
+  enemyKoopa() {
+    this.testSetStatus("koopa", "enemy");
+    this.applyModifications("current");
+  },
+
+  resetAllTestStatuses() {
+    this.testSetStatus("goomba", "neutral");
+    this.testSetStatus("koopa", "neutral");
+    this.testSetStatus("toad", "neutral");
+    this.clearCurrentModifications();
+  },
+  // --- End Utility ---
 };
 if (typeof window !== "undefined") {
   window.MapModifier = MapModifier;
