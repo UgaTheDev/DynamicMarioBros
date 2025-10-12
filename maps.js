@@ -2025,31 +2025,25 @@ function World13(map) {
     }),
   ];
 }
-
 function World14(map) {
   map.time = 300;
   map.locs = [new Location(0, startCastle)];
   map.areas = [
     new Area("Castle", function () {
       setLocationGeneration(0);
-
       startCastleInside();
-
       pushPreThing(Stone, 40, 88, 19, 3);
       pushPreFloor(40, 24, 8);
       fillPreWater(104, 8, 4);
-
       pushPreFloor(120, 24, 11);
       pushPreThing(Stone, 184, 64, 1, 1);
       pushPreThing(CastleBlock, 184, 56);
       makeCeilingCastle(192, 136);
       fillPreWater(208, 0, 6);
-
       pushPreFloor(232, 24, 3);
       pushPreThing(CastleBlock, 240, 24, 6);
       pushPreThing(Block, 240, 56, Mushroom);
       fillPreWater(256, 0, 6);
-
       pushPreThing(Stone, 280, 32, 37, 1);
       pushPreThing(Stone, 280, 24, 69, 3);
       pushPreFloor(280, 0, 93);
@@ -2075,13 +2069,19 @@ function World14(map) {
       pushPreThing(Stone, 928, 24, 4, 3);
       pushPreThing(Stone, 984, 24, 5, 3);
       pushPreThing(Stone, 984, 80, 5, 2);
-
-      endCastleInside(1024, "Toad"); // or "Goomba", "Koopa", etc.
+      endCastleInside(1024, "Toad");
       pushPreThing(Platform, 1108, 56, 4, [
         moveSliding,
         1080,
         1112,
       ]).object.nocollidechar = true;
+
+      // ACTIVATE TRIGGER - Position adjusted to Toad's location (1024)
+      if (window.ToadDialogueTrigger) {
+        ToadDialogueTrigger.setTriggerPosition(1000, 1040); // Trigger 24 pixels before Toad
+        ToadDialogueTrigger.start();
+        console.log("🏰 Castle 1-4 loaded - Toad dialogue trigger activated");
+      }
     }),
   ];
 }

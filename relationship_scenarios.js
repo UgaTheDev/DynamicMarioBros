@@ -496,20 +496,23 @@ Return ONLY valid JSON in this exact format:
     document.head.appendChild(style);
   },
 }; // <-- CLOSE RelationshipScenarios HERE
+
 const ToadDialogueTrigger = {
   active: false,
   hasTriggered: false,
+  triggerStart: 1000,
+  triggerEnd: 1040,
+
+  setTriggerPosition(startX, endX) {
+    this.triggerStart = startX;
+    this.triggerEnd = endX;
+    console.log(`🎯 Trigger zone set: ${startX} to ${endX}`);
+  },
 
   start() {
     this.active = true;
     this.hasTriggered = false;
     console.log("🍄 Toad dialogue trigger activated for this level");
-    console.log(
-      "🍄 Active status:",
-      this.active,
-      "HasTriggered:",
-      this.hasTriggered
-    );
   },
 
   stop() {
@@ -519,46 +522,36 @@ const ToadDialogueTrigger = {
   },
 
   check() {
-    // Debug: Show we're in the check function
-    if (this.active && !this.hasTriggered && window.player) {
-      console.log(
-        `🔍 Mario at x=${Math.floor(player.left)}, active=${
-          this.active
-        }, triggered=${this.hasTriggered}`
-      );
-    }
+    if (!this.active || this.hasTriggered) return;
 
-    if (!this.active || this.hasTriggered) {
-      console.log(
-        "⚠️ Check returning early - active:",
-        this.active,
-        "hasTriggered:",
-        this.hasTriggered
-      );
-      return;
-    }
-
-    if (!window.player) {
-      console.log("⚠️ No player found");
-      return;
-    }
-
-    console.log(
-      `✅ Checking position: ${Math.floor(player.left)} vs 1090-1110`
-    );
-
-    if (player.left >= 1090 && player.left <= 1110) {
+    if (
+      window.player &&
+      player.left >= this.triggerStart &&
+      player.left <= this.triggerEnd
+    ) {
       this.hasTriggered = true;
-      console.log("🍄 Approached Toad - triggering dialogue!");
+      console.log(
+        `🍄 Mario approached Toad at position: ${player.left} (trigger: ${this.triggerStart}-${this.triggerEnd})`
+      );
 
-      player.keys.run = 0;
+      // Pause player
+      if (player.keys) {
+        player.keys.run = 0;
+        player.keys.left = 0;
+        player.keys.right = 0;
+      }
       player.xvel = 0;
 
-      if (window.RelationshipScenarios) {
-        setTimeout(() => {
-          RelationshipScenarios.showScenarioDialog("toad");
-        }, 300);
-      }
+      // Call testScenario
+      setTimeout(() => {
+        console.log("🎮 Calling testScenario('toad')...");
+
+        if (window.testScenario) {
+          testScenario("toad");
+        } else {
+          console.error("❌ testScenario not found!");
+        }
+      }, 500);
     }
   },
 };
