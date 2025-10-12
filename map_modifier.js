@@ -31,12 +31,14 @@ const MapModifier = {
     this.activeModifications = {};
     // ------------------------------------------------------------------------------------
   },
+
   init() {
     console.log("🗺️ Map Modifier initialized");
     this.loadModificationState();
     this.hookIntoSpawnMap();
     this.hookIntoSetMap();
   },
+
   hookIntoSetMap() {
     if (!window.setMapOriginal && window.setMap) {
       window.setMapOriginal = window.setMap;
@@ -50,6 +52,7 @@ const MapModifier = {
       console.log("✅ Hooked into setMap - modifiers reset on level change");
     }
   },
+
   _showRelationshipMessage(msg) {
     let box = document.getElementById("relationship-message");
     if (box) {
@@ -62,6 +65,7 @@ const MapModifier = {
       console.log(msg);
     }
   },
+
   // --- CONSOLIDATED DIALOGUES ---
   showToadHelpMessage() {
     this._showRelationshipMessage(
@@ -92,7 +96,7 @@ const MapModifier = {
   },
   showKoopaEnemyMessage() {
     this._showRelationshipMessage(
-      "⚫ Enemy Koopa: Reinforcements and hidden obstacles deployed!"
+      "⚫ Enemy Koopa: Homing shells deployed! Dodge or perish!"
     );
   },
   // --- END DIALOGUES ---
@@ -113,6 +117,7 @@ const MapModifier = {
     }
     this.hookIntoMaintainSolids();
   },
+
   hookIntoMaintainSolids() {
     if (!window.maintainSolidsOriginal && window.maintainSolids) {
       window.maintainSolidsOriginal = window.maintainSolids;
@@ -138,6 +143,7 @@ const MapModifier = {
       console.log("✅ Hooked into maintainSolids - platforms protected");
     }
   },
+
   injectModifications() {
     if (!window.map || !window.GameRelationships) return;
     const relationships = GameRelationships.getAllStatuses();
@@ -148,6 +154,7 @@ const MapModifier = {
       }
     });
   },
+
   applyModifications(levelKey) {
     if (!levelKey) {
       console.warn("No level key provided");
@@ -165,6 +172,7 @@ const MapModifier = {
       this.saveModificationState();
     }, 100);
   },
+
   saveOriginalState(levelKey) {
     this.originalMapStates[levelKey] = {
       platforms: [],
@@ -175,6 +183,7 @@ const MapModifier = {
     };
     console.log(`💾 Saved original state for ${levelKey}`);
   },
+
   applyCharacterModifications(levelKey, character, status) {
     const modKey = `${levelKey}_${character}_${status}`;
     console.log(
@@ -193,6 +202,7 @@ const MapModifier = {
     }
     this.activeModifications[modKey] = true;
   },
+
   applyToadModifications(levelKey, status) {
     if (status === "allied") {
       console.log("🍄 Toad is allied - mushroom bonuses activated!");
@@ -225,32 +235,176 @@ const MapModifier = {
         "🟢 Allied Goomba: Removing local threats and adding rewards."
       );
       this.showGoombaHelpMessage();
-      this.removeEnemies(levelKey, "goomba", Infinity); // Remove all existing goombas
+
+      // Remove existing goombas - run multiple times to catch all of them
+      this.removeEnemies(levelKey, "goomba", Infinity);
+
+      // Run removal again after a short delay to catch any that were just spawning
+      setTimeout(() => {
+        this.removeEnemies(levelKey, "goomba", Infinity);
+      }, 100);
+
+      // And one more time for good measure
+      setTimeout(() => {
+        this.removeEnemies(levelKey, "goomba", Infinity);
+      }, 300);
+
       this.setupGoombaSuppression(); // <-- Block future goombas from spawning in THIS level
       this.addPowerUps(levelKey, "fireflower", 2);
     } else if (status === "enemy") {
       console.log("🔴 Enemy Goomba: Massing forces!");
       this.showGoombaEnemyMessage();
-      this.addEnemies(levelKey, "goomba", 10);
-      this.spreadPlatforms(levelKey); // Make jumps harder
+      this.addEnemies(levelKey, "goomba", 10); // Back to normal size
     }
   },
 
-  // KOOPA MODIFICATIONS
+  // KOOPA MODIFICATIONS  // KOOPA MODIFICATIONS
   applyKoopaModifications(levelKey, status) {
     if (status === "allied") {
-      console.log("🐢 Allied Koopa: Revealing secrets and providing bounce!");
+      console.log(
+        "🐢 Allied Koopa: Revealing secrets and providing boost rings!"
+      );
       this.showKoopaHelpMessage();
       this.revealHiddenBlocks(levelKey, 3);
-      this.addSprings(levelKey, 2);
-      this.addHighCoins(levelKey, 5);
+      this.addBoostRings(levelKey, 8);
+      this.addHighCoins(levelKey, 15);
     } else if (status === "enemy") {
-      console.log("⚫ Enemy Koopa: Traps and reinforcements active.");
+      console.log("⚫ Enemy Koopa: Homing shells incoming in 3 seconds!");
       this.showKoopaEnemyMessage();
-      this.addEnemies(levelKey, "koopa", 5);
-      this.hideBlocks(levelKey, 3);
-      this.addFalseBlocks(levelKey, 2);
+      this.addEnemies(levelKey, "koopa", 3);
+
+      // Spawn homing shells after 3-second delay
+      setTimeout(() => {
+        console.log("⚫ Enemy Koopa: Deploying homing shells now!");
+        this.spawnHomingShells(levelKey, 8);
+      }, 3000); // 3-second delay
     }
+  },
+  // SPAWN HOMING SHELLS METHODS
+  spawnHomingShells(levelKey, count) {
+    console.log(`🎯 Spawning ${count} homing shells`);
+
+    const positions = this.getHomingShellPositions(levelKey, count);
+
+    positions.forEach((pos, index) => {
+      // Stagger the spawns with additional delay between each shell
+      setTimeout(() => {
+        this.createHomingShell(pos.x, pos.y, `koopa_homing_shell`);
+      }, index * 500); // 500ms between each shell spawn
+    });
+  },
+
+  createHomingShell(x, y, tag) {
+    console.log(`🎯 Creating homing shell at (${x}, ${y})`);
+
+    try {
+      // Create a shell based on Koopa shell
+      const shell = new Thing(Koopa, true); // true for shell mode
+      addThing(shell, x, y);
+      shell.relationshipTag = tag;
+      shell.nokillend = true;
+      shell.outerok = Infinity;
+
+      // Make it spin and home in on player
+      shell.movement = this.createHomingMovement();
+
+      // Visual customization - alternating green/red
+      const isGreen = Math.random() > 0.5;
+      shell.shellColor = isGreen ? "green" : "red";
+
+      if (isGreen) {
+        removeClass(shell, "koopa");
+        addClass(shell, "green-shell");
+      } else {
+        removeClass(shell, "koopa");
+        addClass(shell, "red-shell");
+      }
+
+      // Reduced speed boost - only 1.25x instead of 2.5x
+      if (shell.walking) {
+        shell.walking.speed *= 1.25; // Was 2.5x, now 1.25x
+      }
+
+      shell.homingActive = true;
+      shell.lastDirectionChange = 0;
+
+      console.log(
+        `🎯 ${shell.shellColor} homing shell deployed at (${x}, ${y}) - HALF SPEED`
+      );
+      return shell;
+    } catch (e) {
+      console.error("Failed to create homing shell:", e);
+      return null;
+    }
+  },
+  createHomingMovement() {
+    return function (shell) {
+      if (!shell.alive || !shell.homingActive) return;
+
+      const now = Date.now();
+
+      // Only adjust direction every 500ms to prevent jittery movement
+      if (now - shell.lastDirectionChange > 500) {
+        if (window.player && player.alive) {
+          // Calculate direction to player
+          const dx = player.left - shell.left;
+          const dy = player.top - shell.top;
+
+          // Prioritize horizontal movement, with slight vertical adjustment
+          if (Math.abs(dx) > 20) {
+            if (dx > 0) {
+              shell.direction = 1; // Move right
+            } else {
+              shell.direction = -1; // Move left
+            }
+          }
+
+          // Occasionally jump toward player if they're above
+          if (dy < -30 && Math.random() < 0.3) {
+            shell.yvel = -unitsize * 1; // Reduced jump power
+          }
+
+          shell.lastDirectionChange = now;
+        }
+      }
+
+      // Apply movement based on direction - HALF SPEED
+      if (shell.direction > 0) {
+        shell.xvel = unitsize * 0.9; // Was 1.8, now 0.9 (half speed)
+      } else if (shell.direction < 0) {
+        shell.xvel = -unitsize * 0.9; // Was -1.8, now -0.9 (half speed)
+      }
+
+      // Visual spinning effect
+      if (now % 200 < 100) {
+        addClass(shell, "spinning");
+      } else {
+        removeClass(shell, "spinning");
+      }
+    };
+  },
+
+  getHomingShellPositions(levelKey, count) {
+    const positions = [];
+    const startX = 400;
+    const endX = 2200;
+
+    for (let i = 0; i < count; i++) {
+      // Distribute shells throughout the level
+      const x = startX + (endX - startX) * (i / count);
+
+      // Vary heights - some on ground, some on platforms
+      const heights = [88, 72, 64, 56];
+      const y = heights[Math.floor(Math.random() * heights.length)];
+
+      positions.push({
+        x: x,
+        y: y,
+      });
+    }
+
+    console.log(`📍 Homing shell positions: ${positions.length} shells`);
+    return positions;
   },
 
   // *** Global AddThing Behavior Override for Goomba Suppression ***
@@ -392,22 +546,75 @@ const MapModifier = {
   // HELPER: Remove enemies from the current map
   removeEnemies(levelKey, enemyType, count) {
     console.log(`🗑️ Removing up to ${count} ${enemyType} enemies.`);
+
+    if (!window.characters || window.characters.length === 0) {
+      console.log(
+        "No characters array or empty - enemies may not be spawned yet."
+      );
+      return;
+    }
+
+    const enemyTypeLower = enemyType.toLowerCase();
+
+    // Filter enemies - check type, name, constructor.name, and title
     const enemiesToRemove = window.characters
-      .filter(
-        (c) =>
-          c.alive &&
-          !c.relationshipTag &&
-          c.name && // <-- Safely check for name property
-          c.name.toLowerCase() === enemyType.toLowerCase()
-      )
-      .slice(0, count);
+      .filter((c) => {
+        if (!c) return false;
+
+        // Don't skip things that might not be fully "alive" yet
+        // Only skip if explicitly dead
+        if (c.dead) return false;
+
+        // Skip things we've already tagged
+        if (c.relationshipTag) return false;
+
+        // Check by type property (PRIMARY - used by Goomba, Koopa, etc.)
+        if (c.type && c.type.toLowerCase() === enemyTypeLower) {
+          return true;
+        }
+
+        // Check by name property
+        if (c.name && c.name.toLowerCase() === enemyTypeLower) {
+          return true;
+        }
+
+        // Check by constructor name
+        if (
+          c.constructor &&
+          c.constructor.name &&
+          c.constructor.name.toLowerCase() === enemyTypeLower
+        ) {
+          return true;
+        }
+
+        // Check by title property
+        if (
+          c.title &&
+          typeof c.title === "string" &&
+          c.title.toLowerCase().includes(enemyTypeLower)
+        ) {
+          return true;
+        }
+
+        return false;
+      })
+      .slice(0, count === Infinity ? undefined : count);
 
     if (enemiesToRemove.length > 0) {
-      console.log(`Found ${enemiesToRemove.length} ${enemyType}s to remove.`);
-      enemiesToRemove.forEach((enemy) => this.removeObject(enemy));
+      console.log(`Found ${enemiesToRemove.length} ${enemyType}(s) to remove.`);
+      enemiesToRemove.forEach((enemy) => {
+        console.log(
+          `  Removing ${
+            enemy.type || enemy.name || enemy.constructor.name
+          } at x=${enemy.left || "unknown"}`
+        );
+        this.removeObject(enemy);
+      });
     } else {
-      console.log(`No existing ${enemyType}s found to remove.`);
+      console.log(`No ${enemyType}s found to remove in this pass.`);
     }
+
+    return enemiesToRemove.length;
   },
 
   // Spawning faster enemies
@@ -424,6 +631,7 @@ const MapModifier = {
       }
     });
   },
+
   // Renamed function to clarify it modifies existing Bricks
   convertBricksToQuestionBlocks(levelKey, count) {
     console.log(`❓ Converting existing bricks to ? blocks for bonus rewards.`);
@@ -465,6 +673,7 @@ const MapModifier = {
       console.log(`✅ Converted brick at x=${brick.left} to ? block`);
     }
   },
+
   enableDoubleCoinChance() {
     console.log(`🪙 Enabling 40% double coin chance`);
     if (!window.gainCoinOriginal) {
@@ -482,6 +691,7 @@ const MapModifier = {
       console.log("✅ Double coin chance hooked");
     }
   },
+
   disableDoubleCoinChance() {
     if (window.gainCoinOriginal) {
       window.gainCoin = window.gainCoinOriginal;
@@ -489,18 +699,7 @@ const MapModifier = {
       console.log("❌ Double coin chance disabled");
     }
   },
-  addHighPlatforms(levelKey, character) {
-    const positions = this.getHighPlatformPositions(levelKey);
-    positions.forEach((pos) => {
-      this.createPlatform(pos.x, pos.y, pos.width, `${character}_high`);
-    });
-  },
-  spreadPlatforms(levelKey) {
-    console.log("⚠️ Spreading platforms - jumps will be harder");
-  },
-  createGaps(levelKey, count) {
-    console.log(`⚠️ Creating ${count} challenging gaps`);
-  },
+
   addEnemies(levelKey, enemyType, count) {
     console.log(`👾 Adding ${count} ${enemyType}s`);
     const positions = this.getEnemySpawnPositions(levelKey, count);
@@ -508,9 +707,7 @@ const MapModifier = {
       this.spawnEnemy(enemyType, pos.x, pos.y, `relationship_spawn`);
     });
   },
-  weakenEnemies(levelKey, multiplier) {
-    console.log(`💪 Weakening enemies (${multiplier}x health)`);
-  },
+
   addPowerUps(levelKey, type, count) {
     console.log(`⭐ Adding ${count} ${type} power-ups`);
     const positions = this.getPowerUpPositions(levelKey, count);
@@ -518,18 +715,21 @@ const MapModifier = {
       this.spawnPowerUp(type, pos.x, pos.y, `relationship_powerup`);
     });
   },
-  addSprings(levelKey, count) {
-    console.log(`🦘 Adding ${count} springs`);
-    const positions = this.getSpringPositions(levelKey, count);
+
+  addBoostRings(levelKey, count) {
+    console.log(`💨 Adding ${count} horizontal boost rings`);
+    const positions = this.getBoostRingPositions(levelKey, count);
     positions.forEach((pos) => {
-      this.createSpring(pos.x, pos.y, `relationship_spring`);
+      this.createBoostRing(pos.x, pos.y, `relationship_boost_ring`);
     });
   },
-  removeSprings(levelKey) {
-    console.log("🦘 Removing springs");
-    const springs = this.findObjectsByTag("relationship_spring");
-    springs.forEach((spring) => this.removeObject(spring));
+
+  removeBoostRings(levelKey) {
+    console.log("💨 Removing boost rings");
+    const rings = this.findObjectsByTag("relationship_boost_ring");
+    rings.forEach((ring) => this.removeObject(ring));
   },
+
   addBonusCoins(levelKey, count) {
     console.log(`🪙 Adding ${count} bonus coins`);
     const positions = this.getCoinPositions(levelKey, count);
@@ -537,6 +737,7 @@ const MapModifier = {
       this.createCoin(pos.x, pos.y, `relationship_coin`);
     });
   },
+
   addHighCoins(levelKey, count) {
     console.log(`🪙 Adding ${count} high coins`);
     const positions = this.getHighCoinPositions(levelKey, count);
@@ -544,28 +745,13 @@ const MapModifier = {
       this.createCoin(pos.x, pos.y, `relationship_high_coin`);
     });
   },
-  removeCoins(levelKey, count) {
-    console.log(`🪙 Removing ${count} coins`);
-    const coins = this.findObjectsByTag("relationship_coin").slice(0, count);
-    coins.forEach((coin) => this.removeObject(coin));
-  },
+
   revealHiddenBlocks(levelKey, count) {
     console.log(`📦 Revealing ${count} hidden blocks`);
     const blocks = this.findHiddenBlocks(levelKey).slice(0, count);
     blocks.forEach((block) => this.makeBlockVisible(block));
   },
-  hideBlocks(levelKey, count) {
-    console.log(`🫥 Hiding ${count} blocks`);
-    const blocks = this.findVisibleBlocks(levelKey).slice(0, count);
-    blocks.forEach((block) => this.makeBlockHidden(block));
-  },
-  addFalseBlocks(levelKey, count) {
-    console.log(`❌ Adding ${count} false blocks`);
-    const positions = this.getBlockPositions(levelKey, count);
-    positions.forEach((pos) => {
-      this.createFalseBlock(pos.x, pos.y, `relationship_false`);
-    });
-  },
+
   findHiddenBlocks(levelKey) {
     console.log("🔍 Finding hidden blocks...");
     const hiddenBlocks = [];
@@ -579,32 +765,7 @@ const MapModifier = {
     }
     return hiddenBlocks;
   },
-  findVisibleBlocks(levelKey) {
-    console.log("🔍 Finding visible blocks...");
-    const visibleBlocks = [];
-    if (window.solids) {
-      for (let i = 0; i < solids.length; i++) {
-        const solid = solids[i];
-        if (!solid.hidden && solid.name === "Block" && !solid.used) {
-          visibleBlocks.push(solid);
-        }
-      }
-    }
-    return visibleBlocks;
-  },
-  findPlatformsByTag(tag) {
-    console.log(`🔍 Finding platforms with tag: ${tag}`);
-    const platforms = [];
-    if (window.solids) {
-      for (let i = 0; i < solids.length; i++) {
-        const solid = solids[i];
-        if (solid.relationshipTag === tag) {
-          platforms.push(solid);
-        }
-      }
-    }
-    return platforms;
-  },
+
   findObjectsByTag(tag) {
     console.log(`🔍 Finding objects with tag: ${tag}`);
     const objects = [];
@@ -620,27 +781,7 @@ const MapModifier = {
     }
     return objects;
   },
-  createPlatform(x, y, width, tag) {
-    console.log(`🏗️ Creating platform at (${x}, ${y}) width:${width} [${tag}]`);
-    try {
-      const platform = new Thing(Stone, width / 8, 1);
-      addThing(platform, x, y);
-      platform.relationshipTag = tag;
-      platform.outerok = Infinity;
-      platform.nokillend = true;
-      console.log(`✅ Platform created at index ${solids.indexOf(platform)}`);
-      return platform;
-    } catch (e) {
-      console.error("Failed to create platform:", e);
-      return null;
-    }
-  },
-  removePlatform(platform) {
-    console.log(`🗑️ Removing platform`);
-    if (platform && platform.alive) {
-      killNormal(platform);
-    }
-  },
+
   spawnEnemy(type, x, y, tag) {
     console.log(`👾 Spawning ${type} at (${x}, ${y}) [${tag}]`);
     let enemy;
@@ -668,6 +809,7 @@ const MapModifier = {
     }
     return enemy;
   },
+
   spawnPowerUp(type, x, y, tag) {
     console.log(`⭐ Spawning ${type} power-up at (${x}, ${y}) [${tag}]`);
     let powerup;
@@ -689,13 +831,65 @@ const MapModifier = {
     powerup.relationshipTag = tag;
     return powerup;
   },
-  createSpring(x, y, tag) {
-    console.log(`🦘 Creating spring at (${x}, ${y}) [${tag}]`);
-    const spring = new Thing(Springboard);
-    addThing(spring, x, y);
-    spring.relationshipTag = tag;
-    return spring;
+
+  createBoostRing(x, y, tag) {
+    console.log(`💨 Creating boost ring at (${x}, ${y}) [${tag}]`);
+
+    // Use a Star item as the visual base, but we'll modify it
+    const ring = new Thing(Star);
+    addThing(ring, x, y);
+    ring.relationshipTag = tag;
+    ring.nokillend = true;
+    ring.outerok = Infinity;
+    ring.nofall = true; // Keep it floating in place
+    ring.nocollidesolid = true;
+    ring.movement = false; // Don't let it move
+
+    // Try to change the visual to look like a green arrow
+    // Remove star classes and add custom styling
+    if (typeof removeClass === "function") {
+      removeClass(ring, "star");
+      removeClass(ring, "item");
+    }
+    if (typeof addClass === "function") {
+      addClass(ring, "boost-arrow");
+    }
+
+    // Try to set a green color filter if possible
+    if (ring.canvas && ring.context) {
+      ring.context.fillStyle = "#00FF00"; // Green
+    }
+
+    // Override the collision to give horizontal boost instead of star power
+    ring.collide = function (player, ring) {
+      if (!player.player || !ring.alive) return;
+
+      // Give horizontal speed boost (back to 3.5x)
+      player.xvel = unitsize * 3.5; // Fast horizontal movement
+      player.yvel = Math.min(player.yvel, unitsize * -0.5); // Slight upward boost too
+
+      // Visual/audio feedback
+      if (typeof AudioPlayer !== "undefined" && AudioPlayer.play) {
+        AudioPlayer.play("Powerup");
+      }
+
+      // Make the ring flash and respawn quickly
+      ring.hidden = true;
+      setTimeout(() => {
+        if (ring.alive) {
+          ring.hidden = false;
+          if (typeof setThingSprite === "function") {
+            setThingSprite(ring);
+          }
+        }
+      }, 150);
+
+      console.log("💨 Boost activated! Speed: " + player.xvel);
+    };
+
+    return ring;
   },
+
   createCoin(x, y, tag) {
     console.log(`🪙 Creating coin at (${x}, ${y}) [${tag}]`);
     const coin = new Thing(Coin);
@@ -703,21 +897,14 @@ const MapModifier = {
     coin.relationshipTag = tag;
     return coin;
   },
-  createFalseBlock(x, y, tag) {
-    console.log(`❌ Creating false block at (${x}, ${y}) [${tag}]`);
-    const block = new Thing(Block, false);
-    addThing(block, x, y);
-    block.relationshipTag = tag;
-    removeClass(block, "used");
-    addClass(block, "unused");
-    return block;
-  },
+
   removeObject(obj) {
     console.log(`🗑️ Removing object`);
     if (obj && obj.alive) {
       killNormal(obj);
     }
   },
+
   makeBlockVisible(block) {
     console.log(`👁️ Making block visible`);
     if (block) {
@@ -726,14 +913,7 @@ const MapModifier = {
       setThingSprite(block);
     }
   },
-  makeBlockHidden(block) {
-    console.log(`🫥 Making block hidden`);
-    if (block) {
-      block.hidden = true;
-      addClass(block, "hidden");
-      setThingSprite(block);
-    }
-  },
+
   saveModificationState() {
     const state = {
       active: this.activeModifications,
@@ -741,6 +921,7 @@ const MapModifier = {
     };
     localStorage.setItem("mapModifications", JSON.stringify(state));
   },
+
   loadModificationState() {
     const saved = localStorage.getItem("mapModifications");
     if (saved) {
@@ -749,24 +930,21 @@ const MapModifier = {
       console.log("📂 Loaded modification state");
     }
   },
+
   resetLevel(levelKey) {
     console.log(`🔄 Resetting all modifications for ${levelKey}`);
     this.allowDeletion = true;
     [
       "relationship_spawn",
       "relationship_powerup",
-      "relationship_spring",
       "relationship_coin",
       "relationship_high_coin",
-      "relationship_false",
-      "toad_helpful",
       "toad_fast_enemy",
+      "koopa_homing_shell", // For our new shells
     ].forEach((tag) => {
       const objects = this.findObjectsByTag(tag);
       objects.forEach((obj) => this.removeObject(obj));
     });
-    // Reset any blocks that were modified by Goomba/Koopa relationship logic
-    // We don't track modified blocks specifically, so general tag removal is key.
 
     this.allowDeletion = false;
     Object.keys(this.activeModifications).forEach((key) => {
@@ -776,6 +954,7 @@ const MapModifier = {
     });
     this.saveModificationState();
   },
+
   getModificationSummary(levelKey) {
     const active = Object.keys(this.activeModifications).filter((key) =>
       key.startsWith(levelKey)
@@ -785,20 +964,7 @@ const MapModifier = {
       modifications: active,
     };
   },
-  // --- Position Helpers (Kept generic, no changes needed) ---
-  getHelpfulPlatformPositions(levelKey) {
-    return [
-      { x: 200, y: 64, width: 64 },
-      { x: 350, y: 64, width: 64 },
-      { x: 500, y: 56, width: 64 },
-    ];
-  },
-  getHighPlatformPositions(levelKey) {
-    return [
-      { x: 250, y: 40, width: 64 },
-      { x: 450, y: 32, width: 64 },
-    ];
-  },
+
   getEnemySpawnPositions(levelKey, count) {
     const floorY = 88;
     return Array(count)
@@ -808,6 +974,7 @@ const MapModifier = {
         y: floorY,
       }));
   },
+
   getPowerUpPositions(levelKey, count) {
     return Array(count)
       .fill(null)
@@ -816,39 +983,58 @@ const MapModifier = {
         y: 72,
       }));
   },
-  getSpringPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 450 + i * 200,
-        y: 450,
-      }));
+
+  getBoostRingPositions(levelKey, count) {
+    // Spread boost rings throughout the stage at random heights
+    const positions = [];
+    const startX = 300;
+    const spacing = 225; // Every 450 units horizontally
+
+    for (let i = 0; i < count; i++) {
+      // Random height between ground (88) and sky (24)
+      // Ground level is around 88, sky is around 24
+      const minY = 24; // Highest point (sky)
+      const maxY = 80; // Just above ground level
+      const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+
+      positions.push({
+        x: startX + i * spacing,
+        y: randomY,
+      });
+    }
+
+    return positions;
   },
+
   getCoinPositions(levelKey, count) {
     return Array(count)
       .fill(null)
       .map((_, i) => ({
         x: 300 + i * 50,
-        y: 380,
+        y: 60, // Medium height
       }));
   },
+
   getHighCoinPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 400 + i * 60,
-        y: 200,
-      }));
+    // Spread coins throughout the stage at varying positions
+    const positions = [];
+    const startX = 400; // Start after first ring
+    const spacing = 150; // Space out coins evenly
+
+    for (let i = 0; i < count; i++) {
+      // Random height for each coin between sky and above ground
+      const minY = 24;
+      const maxY = 80;
+      const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+
+      positions.push({
+        x: startX + i * spacing,
+        y: randomY,
+      });
+    }
+
+    return positions;
   },
-  getBlockPositions(levelKey, count) {
-    return Array(count)
-      .fill(null)
-      .map((_, i) => ({
-        x: 400 + i * 100,
-        y: 300,
-      }));
-  },
-  // --- End Position Helpers ---
 
   // --- Utility for testing/debugging (Bypassing direct GameRelationships calls) ---
   testSetStatus(character, status) {
@@ -904,6 +1090,7 @@ const MapModifier = {
   },
   // --- End Utility ---
 };
+
 if (typeof window !== "undefined") {
   window.MapModifier = MapModifier;
   console.log("✅ MapModifier available globally");
