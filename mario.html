@@ -32,12 +32,12 @@
     <script src="upkeep.js"></script>
     <script src="utility.js"></script>
 
-    <!-- ✨ Your AI storytelling scripts LAST -->
+    <!-- ✨ Your AI storytelling scripts -->
     <script src="relationships.js"></script>
-    <script src="relationship_scenarios.js"></script>
-    <script src="dialogue.js"></script>
-    <!-- <script src="map_modifier.js"></script> -->
-    <script src="story_trigger.js"></script>
+    <script src="map_modifier.js"></script>
+    <!-- <script src="relationship_scenarios.js"></script> -->
+    <!-- <script src="dialogue.js"></script> -->
+    <!-- <script src="story_trigger.js"></script> -->
   </head>
   <body onload="FullScreenMario()">
     <!-- ✨ Relationship Message Box for in-game popups -->
@@ -59,5 +59,62 @@
         pointer-events: none;
       "
     ></div>
+
+    <!-- ✨ Initialize relationship systems AFTER the game loads -->
+    <script>
+      // Wait for the game to fully load, then initialize our systems
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          console.log("🎮 Game loaded! Initializing relationship systems...");
+
+          function initializeSystems() {
+            // Initialize MapModifier
+            if (
+              window.MapModifier &&
+              typeof window.MapModifier.manualInit === "function"
+            ) {
+              console.log("🗺️ Initializing MapModifier...");
+              window.MapModifier.manualInit();
+              console.log("✅ MapModifier initialized");
+            } else {
+              console.error("❌ MapModifier not found or cannot initialize");
+            }
+
+            // Initialize GameRelationships
+            if (
+              window.GameRelationships &&
+              typeof window.GameRelationships.init === "function"
+            ) {
+              console.log("💝 Initializing GameRelationships...");
+              window.GameRelationships.init();
+              console.log("✅ GameRelationships initialized");
+            }
+
+            console.log("🎭 All relationship systems ready!");
+            console.log("🎮 Test commands available in console:");
+            console.log("   - allyToad(), enemyToad()");
+            console.log("   - allyGoomba(), enemyGoomba()");
+            console.log("   - allyKoopa(), enemyKoopa()");
+            console.log("   - resetAll(), forceReapply()");
+            console.log("   - testDeathAndRespawn()");
+          }
+
+          // Wait a bit more for everything to be ready, then initialize
+          setTimeout(initializeSystems, 500);
+        }, 1000); // Wait 1 second for game to initialize
+      });
+
+      // Fallback initialization - if the above doesn't work, try this
+      setTimeout(function () {
+        if (window.MapModifier && !window.MapModifierInitialized) {
+          console.log("🔄 Fallback: Initializing MapModifier...");
+          if (typeof window.MapModifier.manualInit === "function") {
+            window.MapModifier.manualInit();
+            window.MapModifierInitialized = true;
+            console.log("✅ MapModifier initialized via fallback");
+          }
+        }
+      }, 3000);
+    </script>
   </body>
 </html>

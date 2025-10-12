@@ -230,6 +230,7 @@ function shiftToLocation(loc) {
     // Try to set up the trigger, with a retry mechanism
     function setupToadTrigger() {
       if (window.ToadDialogueTrigger) {
+        ToadDialogueTrigger.triggerAtFlagpole();
         console.log("✅ ToadDialogueTrigger found! Setting up...");
 
         // Set trigger position for where Toad is

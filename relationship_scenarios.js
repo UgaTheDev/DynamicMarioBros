@@ -211,7 +211,23 @@ Return ONLY valid JSON in this exact format:
 
     outcomeDiv.querySelector(".continue-btn").onclick = () => {
       dialog.remove();
+
+      // ✨ CRITICAL FIX: Disable trigger to prevent loops
+      if (window.ToadDialogueTrigger) {
+        ToadDialogueTrigger.hasTriggered = true;
+        ToadDialogueTrigger.active = false;
+        console.log("🔄 Dialogue trigger disabled to prevent loops");
+      }
+
       if (window.gameState) window.gameState.paused = false;
+      if (window.unpause) window.unpause();
+
+      // Ensure player can move again
+      if (window.player && window.player.keys) {
+        window.player.keys.run = 1;
+      }
+
+      console.log("✅ Dialogue complete - game resumed");
     };
   },
 
@@ -266,12 +282,13 @@ Return ONLY valid JSON in this exact format:
 
 // Export to window
 window.RelationshipScenarios = RelationshipScenarios;
+
 const ToadDialogueTrigger = {
   active: false,
   hasTriggered: false,
   triggerStart: 1000,
   triggerEnd: 1040,
-  character: "toad", // NEW: Track which character
+  character: "toad",
 
   setCharacter(char) {
     this.character = char;
@@ -298,6 +315,44 @@ const ToadDialogueTrigger = {
     console.log("🔄 Dialogue trigger deactivated");
   },
 
+  // NEW: Flagpole trigger method
+  triggerAtFlagpole() {
+    if (this.hasTriggered) return;
+
+    this.hasTriggered = true;
+    this.active = false;
+
+    console.log(
+      `🏁 Flagpole hit! Triggering ${this.character} dialogue in 2 seconds...`
+    );
+
+    // Wait 2 seconds after flagpole, then show dialogue
+    setTimeout(() => {
+      console.log(`🎮 Calling showScenarioDialog for ${this.character}...`);
+
+      // Pause game
+      if (window.pause) pause();
+
+      // Stop player
+      if (window.player && window.player.keys) {
+        window.player.keys.run = 0;
+        window.player.keys.left = 0;
+        window.player.keys.right = 0;
+      }
+      if (window.player) {
+        window.player.xvel = 0;
+        window.player.yvel = 0;
+      }
+
+      if (window.RelationshipScenarios) {
+        RelationshipScenarios.showScenarioDialog(this.character);
+      } else {
+        console.error("❌ RelationshipScenarios not found!");
+      }
+    }, 2000); // 2 second delay
+  },
+
+  // Original position-based trigger (keep for backwards compatibility)
   check() {
     if (!this.active || this.hasTriggered) {
       return;
@@ -318,6 +373,8 @@ const ToadDialogueTrigger = {
     // Check if in trigger zone
     if (player.left >= this.triggerStart && player.left <= this.triggerEnd) {
       this.hasTriggered = true;
+      this.active = false;
+
       console.log(
         `🎭 TRIGGERED at position: ${Math.floor(player.left)} - Character: ${
           this.character
@@ -339,7 +396,7 @@ const ToadDialogueTrigger = {
       console.log(`🎮 Calling showScenarioDialog for ${this.character}...`);
 
       if (window.RelationshipScenarios) {
-        RelationshipScenarios.showScenarioDialog(this.character); // Use the stored character
+        RelationshipScenarios.showScenarioDialog(this.character);
       } else {
         console.error("❌ RelationshipScenarios not found!");
       }
