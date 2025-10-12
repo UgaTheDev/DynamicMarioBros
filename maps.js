@@ -967,59 +967,48 @@ function endCastleInside(xloc, last, hard) {
   endCastleInsideFinal(xloc, last);
 }
 
-function endCastleInsideFinal(xloc, last) {
-  var stopper = pushPreFuncCollider(xloc + 180, collideCastleNPC).object,
-    style = { visibility: "hidden" },
-    text,
-    i;
-  // Either put Peach...
-  if (last) {
-    pushPreThing(Peach, xloc + 194, 13).object;
-    text = stopper.text = [
-      pushPreText(
-        {
-          innerHTML: "THANK YOU " + window.player.title.toUpperCase() + "!",
-          style: style,
-        },
-        xloc + 160,
-        66
-      ).object,
-      pushPreText(
-        {
-          innerHTML: "YOUR QUEST IS OVER.<BR>WE PRESENT YOU A NEW QUEST.",
-          style: style,
-        },
-        xloc + 148,
-        50
-      ).object,
-      pushPreText(
-        { innerHTML: "PRESS BUTTON B<BR>TO SELECT A WORLD.", style: style },
-        xloc + 148,
-        26
-      ).object,
-    ];
-  }
-  // ...or that jerk Toad
-  else {
-    pushPreThing(Toad, xloc + 194, 12).object;
-    text = stopper.text = [
-      pushPreText(
-        {
-          innerHTML: "THANK YOU " + window.player.title.toUpperCase() + "!",
-          style: style,
-        },
-        xloc + 160,
-        66
-      ).object,
-      pushPreText(
-        {
-          innerHTML: "BUT OUR PRINCESS IS IN<BR>ANOTHER CASTLE!",
-          style: style,
-        },
-        xloc + 148,
-        50
-      ).object,
-    ];
+// In maps.js
+
+// In maps.js
+
+// This helper function will turn any character into a static, non-moving object.
+// In maps.js
+
+// This helper function will turn any character into a static, non-moving object.
+function freezeCharacterAsNPC(character) {
+    character.movement = false;
+    character.xvel = 0;
+    character.yvel = 0;
+    character.nofall = true;
+    character.nocollide = true;
+    return character;
+}
+
+// This is the final, consolidated function for all castle endings.
+function endCastleInsideFinal(xloc, characterName) {
+  // This invisible object will trigger the dialogue when touched
+  var stopper = pushPreFuncCollider(xloc + 180, collideCastleNPC).object;
+  
+  // Create an array to hold the dialogue data
+  stopper.dialogueData = [];
+  var npc;
+
+  // This switch statement chooses the character and STORES the dialogue info
+  switch (characterName) {
+    case "Goomba":
+      npc = pushPreThing(Goomba, xloc + 194, 8).object;
+      freezeCharacterAsNPC(npc);
+      stopper.dialogueData.push({ text: "...", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "NO PRINCESS.<BR>ONLY GOOMBA.", x: 148, y: 50 });
+      break;
+    
+    // ... (cases for all your other characters go here) ...
+
+    default: // This will be Toad
+      pushPreThing(Toad, xloc + 194, 12).object;
+      stopper.dialogueData.push({ text: "THANK YOU " + window.player.title.toUpperCase() + "!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "BUT OUR PRINCESS IS IN<BR>ANOTHER CASTLE!", x: 148, y: 50 });
+      break;
   }
 }
 
