@@ -6,8 +6,9 @@ const MapModifier = {
   isLevelActive: false,
   persistentRelationships: {},
   isDeathHooked: false,
+  hasAppliedModifications: false,
+  currentLevelKey: null,
 
-  // INITIALIZATION METHODS
   init() {
     console.log("🗺️ Map Modifier initialized");
     this.loadModificationState();
@@ -18,6 +19,7 @@ const MapModifier = {
     this.startPlayerStateMonitor();
     this.addGlobalDeathListener();
     this.setupDeathDetection();
+    this.hookIntoFlagpoleCompletion();
     console.log("🗺️ All hooks installed");
   },
 
@@ -27,10 +29,8 @@ const MapModifier = {
       window.MapModifier = this;
       console.log("✅ MapModifier manually assigned to window");
 
-      // Call the regular init
       this.init();
 
-      // Add test commands
       window.allyToad = () => this.allyToad();
       window.enemyToad = () => this.enemyToad();
       window.allyGoomba = () => this.allyGoomba();
@@ -49,11 +49,9 @@ const MapModifier = {
     }
   },
 
-  // DEATH DETECTION METHODS
   setupDeathDetection() {
     console.log("🔍 Setting up enhanced death detection");
 
-    // Method 1: Override the player's kill method
     if (window.player && window.player.kill && !this.originalPlayerKill) {
       this.originalPlayerKill = window.player.kill;
       window.player.kill = function () {
@@ -65,7 +63,6 @@ const MapModifier = {
       console.log("✅ Hooked player.kill method");
     }
 
-    // Method 2: Monitor player health/lives
     this.startDeathMonitoring();
   },
 
@@ -79,7 +76,6 @@ const MapModifier = {
         const currentLives = window.player.lives;
         const currentHealth = window.player.health;
 
-        // Check for life loss
         if (lastLives !== undefined && currentLives < lastLives) {
           console.log(
             "💀 LIFE LOST DETECTED! Lives:",
@@ -90,14 +86,12 @@ const MapModifier = {
           this.isLevelActive = true;
           console.log("💀 isLevelActive set to:", this.isLevelActive);
 
-          // Schedule reapplication after respawn
           setTimeout(() => {
             console.log("💀 Scheduling reapplication after life loss");
             this.reapplyPersistentModifications();
           }, 1000);
         }
 
-        // Check for health reaching 0
         if (lastHealth !== undefined && currentHealth <= 0 && lastHealth > 0) {
           console.log("💀 HEALTH ZERO DETECTED! Player died");
           this.isLevelActive = true;
@@ -114,19 +108,22 @@ const MapModifier = {
     setTimeout(monitorDeath, 1000);
   },
 
-  // TEST METHODS
+  // NEW: Test level completion
+  testLevelCompletion() {
+    console.log("🧪 TEST: Simulating level completion (flagpole hit)");
+    this.isLevelActive = false;
+    this.clearCurrentModifications();
+  },
+
   testDeathAndRespawn() {
     console.log("🧪 TEST: Simulating death and respawn cycle");
 
-    // Simulate death
     this.isLevelActive = true;
     console.log("💀 Simulated death - isLevelActive:", this.isLevelActive);
 
-    // Clear modifications (like death would)
     this.resetLevel("current");
     console.log("💀 Cleared level objects");
 
-    // Wait a bit then reapply (like respawn would)
     setTimeout(() => {
       console.log("🔁 Simulating respawn - reapplying modifications");
       this.reapplyPersistentModifications();
@@ -137,20 +134,19 @@ const MapModifier = {
     console.log("🧹 clearCurrentModifications called");
     console.log("🧹 isLevelActive:", this.isLevelActive);
 
-    // Only clear if we're actually completing the level (not dying)
     if (!this.isLevelActive) {
       console.log("🧹 Clearing modifications for level completion");
 
-      // Clear persistent state
+      this.hasAppliedModifications = false;
+      this.currentLevelKey = null;
+
       this.persistentRelationships = {};
       console.log("🧹 Cleared persistentRelationships");
 
-      // Restore original behaviors
       this.disableDoubleCoinChance();
       this.restoreBlockHitBehavior();
       this.restoreGoombaSuppression();
 
-      // Clear active modifications
       this.activeModifications = {};
       console.log("🧹 Cleared activeModifications");
     } else {
@@ -159,11 +155,62 @@ const MapModifier = {
         "💀 persistentRelationships preserved:",
         this.persistentRelationships
       );
-      // Don't clear persistentRelationships on death!
     }
   },
 
-  // More reliable death detection
+  // Add this to your MapModifier initialization
+  hookIntoFlagpoleCompletion() {
+    console.log("🚩 Setting up flagpole completion detection");
+
+    // Method 1: Hook into the FlagCollision function
+    if (window.FlagCollision && !this.originalFlagCollision) {
+      this.originalFlagCollision = window.FlagCollision;
+      window.FlagCollision = function (me, detector) {
+        console.log("🚩 FLAGPOLE HIT - LEVEL COMPLETED!");
+
+        // Tell MapModifier that level is completing
+        MapModifier.isLevelActive = false;
+        MapModifier.clearCurrentModifications();
+
+        // Call original function
+        return MapModifier.originalFlagCollision.call(this, me, detector);
+      };
+      console.log("✅ Hooked into FlagCollision");
+    }
+
+    // Method 2: Hook into endLevel function
+    if (window.endLevel && !this.originalEndLevel) {
+      this.originalEndLevel = window.endLevel;
+      window.endLevel = function () {
+        console.log("🚩 endLevel called - LEVEL COMPLETED!");
+
+        // Tell MapModifier that level is completing
+        MapModifier.isLevelActive = false;
+        MapModifier.clearCurrentModifications();
+
+        // Call original function
+        return MapModifier.originalEndLevel.call(this);
+      };
+      console.log("✅ Hooked into endLevel");
+    }
+
+    // Method 3: Hook into CastleAxeContinues (for castle levels)
+    if (window.CastleAxeContinues && !this.originalCastleAxeContinues) {
+      this.originalCastleAxeContinues = window.CastleAxeContinues;
+      window.CastleAxeContinues = function (player) {
+        console.log("🏰 CASTLE COMPLETED - LEVEL COMPLETED!");
+
+        // Tell MapModifier that level is completing
+        MapModifier.isLevelActive = false;
+        MapModifier.clearCurrentModifications();
+
+        // Call original function
+        return MapModifier.originalCastleAxeContinues.call(this, player);
+      };
+      console.log("✅ Hooked into CastleAxeContinues");
+    }
+  },
+
   hookIntoPlayerRespawn() {
     console.log("🔍 DEBUG: Attempting to hook into player respawn...");
 
@@ -172,11 +219,10 @@ const MapModifier = {
         clearInterval(waitForRespawnSystem);
         console.log("✅ Found respawnPlayer function");
 
-        // Hook into the respawn system
         window.respawnPlayerOriginal = window.respawnPlayer;
         window.respawnPlayer = function () {
           console.log("🔁 DEBUG: respawnPlayer called - player is respawning");
-          MapModifier.isLevelActive = true; // Keep modifications
+          MapModifier.isLevelActive = true;
           console.log(
             "🔁 DEBUG: isLevelActive set to:",
             MapModifier.isLevelActive
@@ -185,7 +231,6 @@ const MapModifier = {
           const result = window.respawnPlayerOriginal.apply(this, arguments);
           console.log("🔁 DEBUG: Original respawnPlayer completed");
 
-          // Schedule reapplication after respawn completes
           setTimeout(() => {
             console.log(
               "🔁 DEBUG: Timeout callback - calling reapplyPersistentModifications"
@@ -204,18 +249,15 @@ const MapModifier = {
       }
     }, 100);
 
-    // Safety timeout
     setTimeout(() => {
       clearInterval(waitForRespawnSystem);
       console.log("⏰ Respawn hook timeout - respawnPlayer might not exist");
     }, 5000);
   },
 
-  // DEBUG: Add a global listener to catch ANY death-related calls
   addGlobalDeathListener() {
     console.log("🔍 DEBUG: Adding global death listener");
 
-    // Override killNormal to catch when player dies
     if (window.killNormal && !window.killNormalOriginal) {
       window.killNormalOriginal = window.killNormal;
       window.killNormal = function (obj) {
@@ -235,7 +277,6 @@ const MapModifier = {
       console.log("❌ killNormal not available or already hooked");
     }
 
-    // Also hook into any function that might kill the player
     if (window.killPlayer && !window.killPlayerOriginal) {
       window.killPlayerOriginal = window.killPlayer;
       window.killPlayer = function (playerObj) {
@@ -253,11 +294,9 @@ const MapModifier = {
     }
   },
 
-  // Enhanced death hook with more debugging
   hookIntoPlayerDeath() {
     console.log("🔍 DEBUG: Attempting to hook into player death...");
 
-    // Wait for player to be available
     const waitForPlayer = setInterval(() => {
       if (window.player) {
         clearInterval(waitForPlayer);
@@ -281,7 +320,6 @@ const MapModifier = {
               MapModifier.isLevelActive
             );
 
-            // Call the original death function
             const result = MapModifier.originalPlayerDeath.call(
               this,
               playerObj
@@ -306,14 +344,12 @@ const MapModifier = {
       }
     }, 100);
 
-    // Safety timeout
     setTimeout(() => {
       clearInterval(waitForPlayer);
       console.log("⏰ Player death hook timeout");
     }, 5000);
   },
 
-  // Enhanced state monitor with more logging
   startPlayerStateMonitor() {
     console.log("🔍 DEBUG: Starting enhanced player state monitor");
     let lastAliveState = true;
@@ -328,14 +364,12 @@ const MapModifier = {
         const currentDead = player.dead;
         const currentDying = player.dying;
 
-        // Log state every 10 iterations for visibility
         if (monitorIteration % 10 === 0) {
           console.log(
             `🔍 Player State [${monitorIteration}]: alive=${currentAlive}, dead=${currentDead}, dying=${currentDying}, isLevelActive=${this.isLevelActive}`
           );
         }
 
-        // Log all state changes for debugging
         if (lastAliveState !== currentAlive) {
           console.log(
             `🔍 DEBUG: player.alive changed from ${lastAliveState} to ${currentAlive}`
@@ -390,7 +424,6 @@ const MapModifier = {
           }
         }
 
-        // Detect when player respawns (dead to alive)
         if (!lastAliveState && currentAlive) {
           console.log(
             "🔁 Player state monitor: dead -> alive - reapplying modifications"
@@ -430,33 +463,58 @@ const MapModifier = {
     if (!window.setMapOriginal && window.setMap) {
       window.setMapOriginal = window.setMap;
       window.setMap = function () {
-        console.log("🗺️ setMap called - new level loading");
         console.log(
-          "🗺️ Current isLevelActive before reset:",
-          MapModifier.isLevelActive
+          "🗺️ setMap called - checking if level completion or respawn"
         );
-        // This runs when a new level starts (level completion)
-        MapModifier.isLevelActive = false; // Level completed, ready for new one
-        console.log("🗺️ isLevelActive after reset:", MapModifier.isLevelActive);
-        MapModifier.clearCurrentModifications();
+        console.log("🗺️ Current isLevelActive:", MapModifier.isLevelActive);
+
+        // Only treat as level completion if we're NOT in active/death state
+        if (!MapModifier.isLevelActive) {
+          console.log("🗺️ Level completion detected - clearing modifications");
+          MapModifier.clearCurrentModifications();
+        } else {
+          console.log("🗺️ Respawning - keeping modifications");
+          // Don't clear modifications - this is a respawn, not level completion
+        }
+
         const result = setMapOriginal.apply(this, arguments);
         console.log("🗺️ setMap completed");
         return result;
       };
-      console.log("✅ Hooked into setMap - modifiers reset on level change");
+      console.log("✅ Hooked into setMap - only clears on level completion");
     } else {
       console.log("❌ setMap not available or already hooked");
     }
   },
-
   applyModifications(levelKey) {
     console.log(`🗺️ applyModifications called for level: ${levelKey}`);
+
+    // PREVENT mid-level application unless it's a respawn
+    if (this.hasAppliedModifications && this.currentLevelKey === levelKey) {
+      console.log("⏩ Already applied modifications for this level, skipping");
+      return;
+    }
+
+    // ADD THIS: If level isn't properly active, store but don't apply
+    if (!this.isLevelActive) {
+      console.log(
+        "⏩ Level not active - storing relationships but not applying"
+      );
+      const relationships = GameRelationships.getAllStatuses();
+      Object.entries(relationships).forEach(([character, status]) => {
+        this.persistentRelationships[character] = status;
+      });
+      return;
+    }
+
     if (!levelKey) {
       console.warn("No level key provided");
       return;
     }
 
     console.log(`🗺️ Applying modifications to level: ${levelKey}`);
+    this.currentLevelKey = levelKey;
+
     if (!this.originalMapStates[levelKey]) {
       this.saveOriginalState(levelKey);
     }
@@ -468,28 +526,28 @@ const MapModifier = {
       Object.entries(relationships).forEach(([character, status]) => {
         this.applyCharacterModifications(levelKey, character, status);
       });
+      this.hasAppliedModifications = true;
       this.saveModificationState();
     }, 100);
   },
+  injectModificationsOnce() {
+    console.log("🗺️ injectModificationsOnce called");
 
-  injectModifications() {
-    console.log("🗺️ injectModifications called");
-    if (!window.map || !window.GameRelationships) {
-      console.log(
-        "❌ injectModifications: map or GameRelationships not available"
-      );
+    if (this.hasAppliedModifications) {
+      console.log("⏩ SKIPPING - Already injected for this level");
       return;
     }
 
-    const relationships = GameRelationships.getAllStatuses();
-    const levelKey = "current";
-    console.log(`🗺️ Injecting modifications for relationships:`, relationships);
+    if (!window.map || !window.GameRelationships) {
+      console.log("❌ Map or GameRelationships not available");
+      return;
+    }
 
-    Object.entries(relationships).forEach(([character, status]) => {
-      if (status !== "neutral") {
-        this.applyCharacterModifications(levelKey, character, status);
-      }
-    });
+    console.log("🗺️ FIRST-TIME Injecting modifications");
+    this.applyModifications("current"); // Use the tracked method
+
+    this.hasAppliedModifications = true;
+    console.log("✅ INJECTIONS COMPLETE - Will not inject again this level");
   },
 
   saveOriginalState(levelKey) {
@@ -518,7 +576,6 @@ const MapModifier = {
     }
   },
 
-  // --- CONSOLIDATED DIALOGUES ---
   showToadHelpMessage() {
     this._showRelationshipMessage(
       "🍄 Allied Toad: Mushrooms incoming! You now have a chance for coins to double drop!"
@@ -529,7 +586,6 @@ const MapModifier = {
       "😈 Enemy Toad: Treasures are mine! Expect traps and suppressed rewards!"
     );
   },
-  // NEW GOOMBA DIALOGUES
   showGoombaHelpMessage() {
     this._showRelationshipMessage(
       "🟢 Allied Goomba: Your enemy is my enemy! Goombas cleared!"
@@ -540,7 +596,6 @@ const MapModifier = {
       "🔴 Enemy Goomba: We're multiplying! Face our sheer numbers!"
     );
   },
-  // NEW KOOPA DIALOGUES
   showKoopaHelpMessage() {
     this._showRelationshipMessage(
       "🐢 Allied Koopa: Secrets revealed and extra boost power!"
@@ -551,7 +606,6 @@ const MapModifier = {
       "⚫ Enemy Koopa: Homing shells deployed! Dodge or perish!"
     );
   },
-  // --- END DIALOGUES ---
 
   hookIntoMaintainSolids() {
     console.log("🔧 hookIntoMaintainSolids called");
@@ -588,62 +642,70 @@ const MapModifier = {
         console.log("🎮 spawnMap called - LEVEL STARTING");
         spawnMapOriginal();
 
-        // More aggressive modification injection
+        this.hasAppliedModifications = false;
+        this.currentLevelKey = "current";
+        console.log("🔄 Reset application tracking for new level");
+
         const injectWithRetry = (attempt = 0) => {
           if (window.player && window.player.alive) {
             console.log("🎮 Player alive - marking level as active");
             MapModifier.isLevelActive = true;
             console.log("🎮 isLevelActive set to:", MapModifier.isLevelActive);
-            MapModifier.injectModifications();
-          } else if (attempt < 10) {
-            console.log(`🎮 Player not ready yet, retry ${attempt + 1}/10`);
+
+            // CHECK FOR STORED RELATIONSHIPS and apply them
+            const hasStoredRelationships =
+              Object.keys(this.persistentRelationships).length > 0;
+            if (hasStoredRelationships && !this.hasAppliedModifications) {
+              console.log(
+                "🎮 Found stored relationships - applying:",
+                this.persistentRelationships
+              );
+              MapModifier.applyModifications("current");
+            } else if (this.hasAppliedModifications) {
+              console.log("✅ Modifications already applied");
+            } else {
+              console.log(
+                "🎮 No stored relationships - waiting for natural triggers"
+              );
+            }
+          } else if (attempt < 5) {
+            console.log(`🎮 Player not ready yet, retry ${attempt + 1}/5`);
             setTimeout(() => injectWithRetry(attempt + 1), 200);
           } else {
-            console.log("❌ Player never became ready for modifications");
+            console.log("❌ Player never became ready");
           }
         };
 
         setTimeout(() => injectWithRetry(), 300);
       };
-      console.log("✅ Hooked into spawnMap");
+      console.log("✅ Hooked into spawnMap - applies stored relationships");
     } else {
       console.log("❌ spawnMap not available or already hooked");
     }
     this.hookIntoMaintainSolids();
   },
-
   reapplyPersistentModifications() {
     console.log("🔄 ===== REAPPLY PERSISTENT MODIFICATIONS =====");
     console.log("🔄 isLevelActive:", this.isLevelActive);
     console.log("🔄 persistentRelationships:", this.persistentRelationships);
+    console.log("🔄 hasAppliedModifications:", this.hasAppliedModifications);
 
     if (!this.isLevelActive) {
       console.log("❌ Cannot reapply - level not active");
       return;
     }
 
-    // Clear existing modification objects first
+    this.hasAppliedModifications = false;
+    console.log("🔄 Reset hasAppliedModifications for respawn");
+
     this.resetLevel("current");
 
-    // Wait a bit for level to reset, then reapply
     setTimeout(() => {
       console.log("🔄 Reapplying modifications after respawn");
-
-      // Reapply all persistent relationships
-      Object.entries(this.persistentRelationships).forEach(
-        ([character, status]) => {
-          if (status !== "neutral") {
-            console.log(`🔄 Reapplying ${character} as ${status}`);
-            this.applyCharacterModifications("current", character, status);
-          }
-        }
-      );
-
+      this.applyModifications("current"); // Use the tracked method
       console.log("✅ Modifications reapplied after death");
     }, 800);
   },
-
-  // Emergency fallback method
   forceReapplyModifications() {
     console.log("🚨 FORCE REAPPLYING MODIFICATIONS");
 
@@ -651,18 +713,10 @@ const MapModifier = {
 
     setTimeout(() => {
       console.log("🚨 Applying modifications forcefully");
-      Object.entries(this.persistentRelationships).forEach(
-        ([character, status]) => {
-          if (status !== "neutral") {
-            console.log(`🚨 Force applying ${character} as ${status}`);
-            this.applyCharacterModifications("current", character, status);
-          }
-        }
-      );
+      this.applyModifications("current"); // Use the tracked method
     }, 500);
   },
 
-  // Enhanced applyCharacterModifications with logging
   applyCharacterModifications(levelKey, character, status) {
     const modKey = `${levelKey}_${character}_${status}`;
     console.log(
@@ -672,14 +726,12 @@ const MapModifier = {
       `🔧 LevelKey: ${levelKey}, Character: ${character}, Status: ${status}`
     );
 
-    // Store for persistence - ALWAYS store even if we think it might be redundant
     this.persistentRelationships[character] = status;
     console.log(
       `🔧 Stored in persistentRelationships:`,
       this.persistentRelationships
     );
 
-    // Ensure level is marked as active for persistence
     this.isLevelActive = true;
     console.log(`🔧 isLevelActive set to:`, this.isLevelActive);
 
@@ -713,17 +765,14 @@ const MapModifier = {
 
       this.setupDeadlyBlockSuppression();
 
-      // Difficulty increases
       this.addEnemies(levelKey, "goomba", 8);
       this.spawnFastEnemies(levelKey, "koopa", 2);
 
-      // Reward removals (Power-up suppression)
       this.removeExistingPowerUps(levelKey, Infinity);
       this.disableDoubleCoinChance();
     }
   },
 
-  // GOOMBA MODIFICATIONS
   applyGoombaModifications(levelKey, status) {
     if (status === "allied") {
       console.log(
@@ -731,29 +780,25 @@ const MapModifier = {
       );
       this.showGoombaHelpMessage();
 
-      // Remove existing goombas - run multiple times to catch all of them
       this.removeEnemies(levelKey, "goomba", Infinity);
 
-      // Run removal again after a short delay to catch any that were just spawning
       setTimeout(() => {
         this.removeEnemies(levelKey, "goomba", Infinity);
       }, 100);
 
-      // And one more time for good measure
       setTimeout(() => {
         this.removeEnemies(levelKey, "goomba", Infinity);
       }, 300);
 
-      this.setupGoombaSuppression(); // <-- Block future goombas from spawning in THIS level
+      this.setupGoombaSuppression();
       this.addPowerUps(levelKey, "fireflower", 2);
     } else if (status === "enemy") {
       console.log("🔴 Enemy Goomba: Massing forces!");
       this.showGoombaEnemyMessage();
-      this.addEnemies(levelKey, "goomba", 10); // Back to normal size
+      this.addEnemies(levelKey, "goomba", 10);
     }
   },
 
-  // KOOPA MODIFICATIONS
   applyKoopaModifications(levelKey, status) {
     if (status === "allied") {
       console.log(
@@ -768,25 +813,22 @@ const MapModifier = {
       this.showKoopaEnemyMessage();
       this.addEnemies(levelKey, "koopa", 3);
 
-      // Spawn homing shells after 3-second delay
       setTimeout(() => {
         console.log("⚫ Enemy Koopa: Deploying homing shells now!");
         this.spawnHomingShells(levelKey, 8);
-      }, 3000); // 3-second delay
+      }, 3000);
     }
   },
 
-  // SPAWN HOMING SHELLS METHODS
   spawnHomingShells(levelKey, count) {
     console.log(`🎯 Spawning ${count} homing shells`);
 
     const positions = this.getHomingShellPositions(levelKey, count);
 
     positions.forEach((pos, index) => {
-      // Stagger the spawns with additional delay between each shell
       setTimeout(() => {
         this.createHomingShell(pos.x, pos.y, `koopa_homing_shell`);
-      }, index * 500); // 500ms between each shell spawn
+      }, index * 500);
     });
   },
 
@@ -794,17 +836,14 @@ const MapModifier = {
     console.log(`🎯 Creating homing shell at (${x}, ${y})`);
 
     try {
-      // Create a shell based on Koopa shell
-      const shell = new Thing(Koopa, true); // true for shell mode
+      const shell = new Thing(Koopa, true);
       addThing(shell, x, y);
       shell.relationshipTag = tag;
       shell.nokillend = true;
       shell.outerok = Infinity;
 
-      // Make it spin and home in on player
       shell.movement = this.createHomingMovement();
 
-      // Visual customization - alternating green/red
       const isGreen = Math.random() > 0.5;
       shell.shellColor = isGreen ? "green" : "red";
 
@@ -816,9 +855,8 @@ const MapModifier = {
         addClass(shell, "red-shell");
       }
 
-      // Reduced speed boost - only 1.25x instead of 2.5x
       if (shell.walking) {
-        shell.walking.speed *= 1.25; // Was 2.5x, now 1.25x
+        shell.walking.speed *= 1.25;
       }
 
       shell.homingActive = true;
@@ -840,39 +878,33 @@ const MapModifier = {
 
       const now = Date.now();
 
-      // Only adjust direction every 500ms to prevent jittery movement
       if (now - shell.lastDirectionChange > 500) {
         if (window.player && player.alive) {
-          // Calculate direction to player
           const dx = player.left - shell.left;
           const dy = player.top - shell.top;
 
-          // Prioritize horizontal movement, with slight vertical adjustment
           if (Math.abs(dx) > 20) {
             if (dx > 0) {
-              shell.direction = 1; // Move right
+              shell.direction = 1;
             } else {
-              shell.direction = -1; // Move left
+              shell.direction = -1;
             }
           }
 
-          // Occasionally jump toward player if they're above
           if (dy < -30 && Math.random() < 0.3) {
-            shell.yvel = -unitsize * 1; // Reduced jump power
+            shell.yvel = -unitsize * 1;
           }
 
           shell.lastDirectionChange = now;
         }
       }
 
-      // Apply movement based on direction - HALF SPEED
       if (shell.direction > 0) {
-        shell.xvel = unitsize * 0.9; // Was 1.8, now 0.9 (half speed)
+        shell.xvel = unitsize * 0.9;
       } else if (shell.direction < 0) {
-        shell.xvel = -unitsize * 0.9; // Was -1.8, now -0.9 (half speed)
+        shell.xvel = -unitsize * 0.9;
       }
 
-      // Visual spinning effect
       if (now % 200 < 100) {
         addClass(shell, "spinning");
       } else {
@@ -887,10 +919,8 @@ const MapModifier = {
     const endX = 2200;
 
     for (let i = 0; i < count; i++) {
-      // Distribute shells throughout the level
       const x = startX + (endX - startX) * (i / count);
 
-      // Vary heights - some on ground, some on platforms
       const heights = [88, 72, 64, 56];
       const y = heights[Math.floor(Math.random() * heights.length)];
 
@@ -904,7 +934,6 @@ const MapModifier = {
     return positions;
   },
 
-  // *** Global AddThing Behavior Override for Goomba Suppression ***
   setupGoombaSuppression() {
     if (typeof window.addThing !== "function" || this.isAddThingOverridden) {
       return;
@@ -913,7 +942,6 @@ const MapModifier = {
     window.addThingOriginal = window.addThing;
 
     window.addThing = function (thing, x, y) {
-      // Check if Goomba is allied and the thing being added is a Goomba
       if (
         window.GameRelationships &&
         window.GameRelationships.isAllied &&
@@ -924,11 +952,9 @@ const MapModifier = {
         console.log(
           "🟢 Allied Goomba: Suppression engaged. Blocking Goomba spawn."
         );
-        // Do NOT call addThingOriginal, effectively preventing the object from being added to the game arrays.
         return;
       }
 
-      // Otherwise, run the original function
       window.addThingOriginal.call(this, thing, x, y);
     };
 
@@ -936,7 +962,6 @@ const MapModifier = {
     console.log("✅ Global addThing behavior overridden for Allied Goomba.");
   },
 
-  // *** Restore AddThing Behavior ***
   restoreGoombaSuppression() {
     if (window.addThingOriginal && this.isAddThingOverridden) {
       window.addThing = window.addThingOriginal;
@@ -948,18 +973,14 @@ const MapModifier = {
     }
   },
 
-  // *** Global Block Hit Behavior Override for Mushroom Suppression ***
   setupDeadlyBlockSuppression() {
     if (!window.Block || this.isBlockHitOverridden) {
       return;
     }
 
-    // Backup the original hit function
     window.Block.prototype.hitOriginal = window.Block.prototype.hit;
 
-    // Define the new overridden hit function
     window.Block.prototype.hit = function (thing) {
-      // Check if Toad is currently an enemy AND the block has contents (i.e., a ? block)
       if (
         window.GameRelationships &&
         window.GameRelationships.isEnemy &&
@@ -967,7 +988,6 @@ const MapModifier = {
         this.contents &&
         this.contents.length > 0
       ) {
-        // Check if the contents includes a non-coin power-up (Mushroom, FireFlower, or Star)
         const isPowerUpBlock = this.contents.some((content) => {
           return (
             content === window.Mushroom ||
@@ -980,20 +1000,16 @@ const MapModifier = {
           console.log(
             "😈 Enemy Toad: Power-up suppression engaged. Dropping only a coin."
           );
-          // Temporarily force contents to be Coin before calling the original hit logic
           const originalContents = this.contents;
           this.contents = [window.Coin, false, false];
 
-          // Call the original hit logic
           window.Block.prototype.hitOriginal.call(this, thing);
 
-          // Restore original contents after hit is complete
           this.contents = originalContents;
           return;
         }
       }
 
-      // If not an enemy or not a power-up block, call the original hit logic
       window.Block.prototype.hitOriginal.call(this, thing);
     };
 
@@ -1001,7 +1017,6 @@ const MapModifier = {
     console.log("✅ Global Block.hit behavior overridden for Enemy Toad.");
   },
 
-  // *** Restore Block Hit Behavior ***
   restoreBlockHitBehavior() {
     if (
       window.Block &&
@@ -1016,7 +1031,6 @@ const MapModifier = {
   },
 
   removeExistingPowerUps(levelKey, count) {
-    // Note: count is now Infinity when Toad is an enemy
     console.log(
       `🍄 Removing up to ${count} existing power-ups from the level.`
     );
@@ -1040,7 +1054,6 @@ const MapModifier = {
     }
   },
 
-  // HELPER: Remove enemies from the current map
   removeEnemies(levelKey, enemyType, count) {
     console.log(`🗑️ Removing up to ${count} ${enemyType} enemies.`);
 
@@ -1053,29 +1066,22 @@ const MapModifier = {
 
     const enemyTypeLower = enemyType.toLowerCase();
 
-    // Filter enemies - check type, name, constructor.name, and title
     const enemiesToRemove = window.characters
       .filter((c) => {
         if (!c) return false;
 
-        // Don't skip things that might not be fully "alive" yet
-        // Only skip if explicitly dead
         if (c.dead) return false;
 
-        // Skip things we've already tagged
         if (c.relationshipTag) return false;
 
-        // Check by type property (PRIMARY - used by Goomba, Koopa, etc.)
         if (c.type && c.type.toLowerCase() === enemyTypeLower) {
           return true;
         }
 
-        // Check by name property
         if (c.name && c.name.toLowerCase() === enemyTypeLower) {
           return true;
         }
 
-        // Check by constructor name
         if (
           c.constructor &&
           c.constructor.name &&
@@ -1084,7 +1090,6 @@ const MapModifier = {
           return true;
         }
 
-        // Check by title property
         if (
           c.title &&
           typeof c.title === "string" &&
@@ -1120,18 +1125,16 @@ const MapModifier = {
       const enemy = this.spawnEnemy(enemyType, pos.x, pos.y, `toad_fast_enemy`);
       if (enemy) {
         if (enemy.walking && enemy.walking.speed) {
-          enemy.walking.speed *= 1.5; // Make them 50% faster
+          enemy.walking.speed *= 1.5;
           console.log(`⚡ ${enemyType} at x=${enemy.left} now faster!`);
         }
       }
     });
   },
 
-  // Renamed function to clarify it modifies existing Bricks
   convertBricksToQuestionBlocks(levelKey, count) {
     console.log(`❓ Converting existing bricks to ? blocks for bonus rewards.`);
 
-    // Find all eligible Brick solids to modify
     const bricksToConvert = solids.filter(
       (s) =>
         s.name === "Brick" &&
@@ -1141,7 +1144,6 @@ const MapModifier = {
         s.left < 2000
     );
 
-    // Convert all eligible bricks (removing the confusing Math.min logic)
     const convertCount = bricksToConvert.length;
     console.log(`Converting ${convertCount} bricks to ? blocks`);
 
@@ -1330,18 +1332,15 @@ const MapModifier = {
   createBoostRing(x, y, tag) {
     console.log(`💨 Creating boost ring at (${x}, ${y}) [${tag}]`);
 
-    // Use a Star item as the visual base, but we'll modify it
     const ring = new Thing(Star);
     addThing(ring, x, y);
     ring.relationshipTag = tag;
     ring.nokillend = true;
     ring.outerok = Infinity;
-    ring.nofall = true; // Keep it floating in place
+    ring.nofall = true;
     ring.nocollidesolid = true;
-    ring.movement = false; // Don't let it move
+    ring.movement = false;
 
-    // Try to change the visual to look like a green arrow
-    // Remove star classes and add custom styling
     if (typeof removeClass === "function") {
       removeClass(ring, "star");
       removeClass(ring, "item");
@@ -1350,25 +1349,20 @@ const MapModifier = {
       addClass(ring, "boost-arrow");
     }
 
-    // Try to set a green color filter if possible
     if (ring.canvas && ring.context) {
-      ring.context.fillStyle = "#00FF00"; // Green
+      ring.context.fillStyle = "#00FF00";
     }
 
-    // Override the collision to give horizontal boost instead of star power
     ring.collide = function (player, ring) {
       if (!player.player || !ring.alive) return;
 
-      // Give horizontal speed boost (back to 3.5x)
-      player.xvel = unitsize * 3.5; // Fast horizontal movement
-      player.yvel = Math.min(player.yvel, unitsize * -0.5); // Slight upward boost too
+      player.xvel = unitsize * 3.5;
+      player.yvel = Math.min(player.yvel, unitsize * -0.5);
 
-      // Visual/audio feedback
       if (typeof AudioPlayer !== "undefined" && AudioPlayer.play) {
         AudioPlayer.play("Powerup");
       }
 
-      // Make the ring flash and respawn quickly
       ring.hidden = true;
       setTimeout(() => {
         if (ring.alive) {
@@ -1435,7 +1429,7 @@ const MapModifier = {
       "relationship_coin",
       "relationship_high_coin",
       "toad_fast_enemy",
-      "koopa_homing_shell", // For our new shells
+      "koopa_homing_shell",
     ].forEach((tag) => {
       const objects = this.findObjectsByTag(tag);
       objects.forEach((obj) => this.removeObject(obj));
@@ -1480,16 +1474,13 @@ const MapModifier = {
   },
 
   getBoostRingPositions(levelKey, count) {
-    // Spread boost rings throughout the stage at random heights
     const positions = [];
     const startX = 300;
-    const spacing = 225; // Every 450 units horizontally
+    const spacing = 225;
 
     for (let i = 0; i < count; i++) {
-      // Random height between ground (88) and sky (24)
-      // Ground level is around 88, sky is around 24
-      const minY = 24; // Highest point (sky)
-      const maxY = 80; // Just above ground level
+      const minY = 24;
+      const maxY = 80;
       const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
 
       positions.push({
@@ -1506,18 +1497,16 @@ const MapModifier = {
       .fill(null)
       .map((_, i) => ({
         x: 300 + i * 50,
-        y: 60, // Medium height
+        y: 60,
       }));
   },
 
   getHighCoinPositions(levelKey, count) {
-    // Spread coins throughout the stage at varying positions
     const positions = [];
-    const startX = 400; // Start after first ring
-    const spacing = 150; // Space out coins evenly
+    const startX = 400;
+    const spacing = 150;
 
     for (let i = 0; i < count; i++) {
-      // Random height for each coin between sky and above ground
       const minY = 24;
       const maxY = 80;
       const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
@@ -1530,16 +1519,25 @@ const MapModifier = {
 
     return positions;
   },
-
-  // --- Utility for testing/debugging (Bypassing direct GameRelationships calls) ---
   testSetStatus(character, status) {
     if (window.GameRelationships && GameRelationships.setStatus) {
       GameRelationships.setStatus(character, status);
-      console.log(
-        `🕹️ TEST: Set ${character} status to ${status}. Modifications will now apply.`
-      );
-      // CRITICAL: Ensure level is marked as active for persistence
-      this.isLevelActive = true;
+      console.log(`🕹️ TEST: Set ${character} status to ${status}.`);
+
+      // CRITICAL: Only apply modifications if level is properly active
+      // and we haven't already applied them
+      if (this.isLevelActive && !this.hasAppliedModifications) {
+        console.log(`🕹️ Level active - applying modifications now`);
+        this.applyModifications("current");
+      } else if (!this.isLevelActive) {
+        console.log(
+          `🕹️ Level not active - storing relationship for next level`
+        );
+        // Just store the relationship, don't apply now
+        this.persistentRelationships[character] = status;
+      } else if (this.hasAppliedModifications) {
+        console.log(`🕹️ Modifications already applied - skipping`);
+      }
     } else {
       console.error(
         "GameRelationships object not available for testing status."
@@ -1547,7 +1545,6 @@ const MapModifier = {
     }
   },
 
-  // ALLY COMMANDS
   allyGoomba() {
     this.testSetStatus("goomba", "allied");
     this.applyModifications("current");
@@ -1563,7 +1560,6 @@ const MapModifier = {
     this.applyModifications("current");
   },
 
-  // ENEMY COMMANDS
   enemyToad() {
     this.testSetStatus("toad", "enemy");
     this.applyModifications("current");
@@ -1583,7 +1579,6 @@ const MapModifier = {
     this.testSetStatus("goomba", "neutral");
     this.testSetStatus("koopa", "neutral");
     this.testSetStatus("toad", "neutral");
-    // Force clear since this is a manual reset
     this.isLevelActive = false;
     this.clearCurrentModifications();
   },
@@ -1593,13 +1588,11 @@ if (typeof window !== "undefined") {
   console.log("🌐 Window detected - setting up MapModifier");
   window.MapModifier = MapModifier;
 
-  // Try to auto-initialize after a short delay
   setTimeout(() => {
     if (window.MapModifier && typeof window.MapModifier.init === "function") {
       console.log("🔄 Auto-initializing MapModifier");
       window.MapModifier.init();
 
-      // Add test commands for auto-init
       window.allyToad = () => MapModifier.allyToad();
       window.enemyToad = () => MapModifier.enemyToad();
       window.allyGoomba = () => MapModifier.allyGoomba();
