@@ -18,7 +18,8 @@ except ImportError:
 
 # Config
 API_KEY = "AIzaSyAxlfwHUMQ5cxlfW2EiLpznh1QBf4BgsfY"
-MAPS_DIR = "maps1"
+MAPS_DIR = "Maps"
+MAPS_DIR1="maps1"
 
 
 if not os.path.exists(MAPS_DIR):
@@ -65,7 +66,7 @@ example_files = {
 # Load one example for each theme
 for theme, filenames in example_files.items():
    for filename in filenames:
-       filepath = os.path.join(MAPS_DIR, filename)
+       filepath = os.path.join(MAPS_DIR1, filename)
        if os.path.exists(filepath):
            with open(filepath, 'r') as f:
                examples[theme] = f.read()
