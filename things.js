@@ -2348,6 +2348,12 @@ function Peach(me) {
 // CollideCastleNPC is actually called by the FuncCollider
 // In things.js
 
+/* ===================================================================
+   FIXED collideCastleNPC Function - Replace in Things.js
+   ===================================================================
+   This replaces the broken collideCastleNPC function around line 3800+
+   =================================================================== */
+
 function collideCastleNPC(playerObject, colliderObject) {
   // Only trigger once
   if (colliderObject.activated) return;
@@ -2398,13 +2404,19 @@ function collideCastleNPC(playerObject, colliderObject) {
     // Get current dialogue data
     var data = dialogue[index];
     
-    // Calculate RELATIVE position from NPC location (like original game)
-    // The NPC collider is positioned in the castle, so text should be relative to it
-    var textX = colliderObject.left + (data.x * unitsize) - gamescreen.left;
+    // Position text in the MIDDLE of the visible screen
+    // Use the actual viewport dimensions
+    var screenCenterX = (window.innerWidth || gamescreen.width * unitsize) / 2;
+    var textX = screenCenterX - 100; // Offset to center the text block
     var textY = data.y * unitsize;
     
     var textElement = addText(data.text, textX, textY);
+    textElement.style.position = "fixed"; // Use fixed positioning
+    textElement.style.left = textX + "px";
+    textElement.style.top = textY + "px";
     textElement.style.visibility = "visible";
+    textElement.style.textAlign = "center";
+    textElement.style.width = "200px";
     activeTextElements.push(textElement);
     
     // Show next dialogue line after 3 seconds
@@ -2562,151 +2574,6 @@ window.listAllMaps = listAllMaps;
 console.log('[CASTLE FIX] Castle completion system loaded');
 console.log('[CASTLE FIX] Use listAllMaps() in console to see available levels');
 console.log('[CASTLE FIX] Mario will now properly advance after castle dialogue');
-
-// ===================================================================
-// Function to advance to the next world/level
-// ===================================================================
-
-function advanceToNextWorld() {
-  console.log('[CASTLE] Advancing to next level...');
-  
-  // Clear any remaining text elements
-  if (window.texts) {
-    for (var i = texts.length - 1; i >= 0; i--) {
-      if (texts[i] && texts[i].parentNode) {
-        texts[i].parentNode.removeChild(texts[i]);
-      }
-    }
-  }
-  
-  // Get current world and level
-  var currentWorld = currentmap[0];
-  var currentLevel = currentmap[1];
-  
-  console.log('[CASTLE] Current: World ' + currentWorld + '-' + currentLevel);
-  
-  // Calculate next level
-  var nextWorld = currentWorld;
-  var nextLevel = currentLevel + 1;
-  
-  // If completed level 4, go to next world's level 1
-  if (currentLevel >= 4) {
-    nextWorld = currentWorld + 1;
-    nextLevel = 1;
-  }
-  
-  console.log('[CASTLE] Next: World ' + nextWorld + '-' + nextLevel);
-  
-  // Check if next world exists
-  var mapExists = false;
-  if (window.mapfuncs && 
-      window.mapfuncs[nextWorld] && 
-      typeof window.mapfuncs[nextWorld][nextLevel] === 'function') {
-    mapExists = true;
-  }
-  
-  if (!mapExists) {
-    console.log('[CASTLE] Next world not found! Looping back to 1-1');
-    nextWorld = 1;
-    nextLevel = 1;
-  }
-  
-  // Wait a moment, then load next level
-  TimeHandler.addEvent(function() {
-    try {
-      // Store player stats before transitioning
-      if (window.player) {
-        storePlayerStats();
-      }
-      
-      // Re-enable controls
-      nokeys = false;
-      notime = false;
-      
-      // Load the next map
-      console.log('[CASTLE] Loading World ' + nextWorld + '-' + nextLevel);
-      setMap(nextWorld, nextLevel);
-      
-      console.log('[CASTLE] Successfully loaded!');
-    } catch (error) {
-      console.error('[CASTLE] Error loading next level:', error);
-      // Fallback: try to load 1-1
-      TimeHandler.addEvent(function() {
-        setMap(1, 1);
-      }, 70);
-    }
-  }, 100);
-}
-
-// ===================================================================
-// Helper function to check if a map exists
-// ===================================================================
-
-function checkMapExists(world, level) {
-  try {
-    if (!window.mapfuncs) {
-      console.error('[MAP CHECK] mapfuncs not initialized');
-      return false;
-    }
-    
-    if (!window.mapfuncs[world]) {
-      console.warn('[MAP CHECK] World ' + world + ' not found');
-      return false;
-    }
-    
-    if (!window.mapfuncs[world][level]) {
-      console.warn('[MAP CHECK] Level ' + level + ' not found in World ' + world);
-      return false;
-    }
-    
-    if (typeof window.mapfuncs[world][level] !== 'function') {
-      console.warn('[MAP CHECK] Map ' + world + '-' + level + ' is not a function');
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('[MAP CHECK] Error checking map existence:', error);
-    return false;
-  }
-}
-
-// ===================================================================
-// Debug helper - call this to see all available maps
-// ===================================================================
-
-function listAllMaps() {
-  console.log('=== AVAILABLE MAPS ===');
-  
-  if (!window.mapfuncs) {
-    console.log('ERROR: mapfuncs not initialized!');
-    return;
-  }
-  
-  for (var world = 1; world <= 9; world++) {
-    if (window.mapfuncs[world]) {
-      var levels = [];
-      for (var level = 1; level <= 4; level++) {
-        if (typeof window.mapfuncs[world][level] === 'function') {
-          levels.push(level);
-        }
-      }
-      if (levels.length > 0) {
-        console.log('World ' + world + ': Levels ' + levels.join(', '));
-      }
-    }
-  }
-  
-  console.log('=====================');
-}
-
-// Make debug function available globally
-window.listAllMaps = listAllMaps;
-
-console.log('[CASTLE FIX] Castle completion system loaded');
-console.log('[CASTLE FIX] Use listAllMaps() in console to see available levels');
-console.log('[CASTLE FIX] Mario will now properly advance after castle dialogue');
-
 function TreeTop(me, width) {
   // Tree trunks are scenery
   me.width = width * 8;
