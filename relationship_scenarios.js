@@ -112,7 +112,7 @@ Create a SHORT scenario (2-3 sentences max) where ${character} needs help or pre
 1. Build naturally from previous interactions
 2. Reflect the current relationship (${relationship})
 3. Be appropriate for a Mario game setting
-4. Present a clear choice between helping (+25) or ignoring/harming (-25)
+4. Present a clear choice between helping (+50) or ignoring/harming (-50)
 
 Return ONLY valid JSON in this exact format:
 {
@@ -179,10 +179,10 @@ Return ONLY valid JSON in this exact format:
     this.addScenarioStyles();
 
     dialog.querySelector(".choice-positive").onclick = () => {
-      this.handleChoice(character, 25, scenario.positiveOutcome, dialog);
+      this.handleChoice(character, 50, scenario.positiveOutcome, dialog);
     };
     dialog.querySelector(".choice-negative").onclick = () => {
-      this.handleChoice(character, -25, scenario.negativeOutcome, dialog);
+      this.handleChoice(character, -50, scenario.negativeOutcome, dialog);
     };
 
     if (window.gameState) window.gameState.paused = true;
@@ -271,6 +271,12 @@ const ToadDialogueTrigger = {
   hasTriggered: false,
   triggerStart: 1000,
   triggerEnd: 1040,
+  character: "toad", // NEW: Track which character
+
+  setCharacter(char) {
+    this.character = char;
+    console.log(`🎭 Set character to: ${char}`);
+  },
 
   setTriggerPosition(startX, endX) {
     this.triggerStart = startX;
@@ -281,23 +287,23 @@ const ToadDialogueTrigger = {
   start() {
     this.active = true;
     this.hasTriggered = false;
-    console.log("🍄 Toad dialogue trigger activated for this level");
+    console.log(
+      `🎮 ${this.character} dialogue trigger activated for this level`
+    );
   },
 
   stop() {
     this.active = false;
     this.hasTriggered = false;
-    console.log("🔄 Toad dialogue trigger deactivated");
+    console.log("🔄 Dialogue trigger deactivated");
   },
 
   check() {
-    // Always log that check is being called
     if (!this.active || this.hasTriggered) {
       return;
     }
 
     if (!window.player) {
-      console.log("⚠️ No player object found");
       return;
     }
 
@@ -312,7 +318,11 @@ const ToadDialogueTrigger = {
     // Check if in trigger zone
     if (player.left >= this.triggerStart && player.left <= this.triggerEnd) {
       this.hasTriggered = true;
-      console.log(`🍄 TRIGGERED at position: ${Math.floor(player.left)}`);
+      console.log(
+        `🎭 TRIGGERED at position: ${Math.floor(player.left)} - Character: ${
+          this.character
+        }`
+      );
 
       // Pause game
       if (window.pause) pause();
@@ -326,10 +336,10 @@ const ToadDialogueTrigger = {
       player.xvel = 0;
       player.yvel = 0;
 
-      console.log("🎮 Calling showScenarioDialog...");
+      console.log(`🎮 Calling showScenarioDialog for ${this.character}...`);
 
       if (window.RelationshipScenarios) {
-        RelationshipScenarios.showScenarioDialog("toad");
+        RelationshipScenarios.showScenarioDialog(this.character); // Use the stored character
       } else {
         console.error("❌ RelationshipScenarios not found!");
       }
