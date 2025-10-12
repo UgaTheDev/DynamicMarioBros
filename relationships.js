@@ -2,8 +2,8 @@
 window.GameRelationships = {
   scores: {
     toad: 0,
-    luigi: 0,
-    peach: 0,
+    goomba: 0,
+    koopa: 0,
   },
 
   init: function () {
@@ -14,7 +14,7 @@ window.GameRelationships = {
         console.log("✅ Relationships loaded from storage:", this.scores);
       } catch (e) {
         console.error("Failed to parse saved relationships:", e);
-        this.scores = { toad: 0, luigi: 0, peach: 0 };
+        this.scores = { toad: 0, goomba: 0, koopa: 0 };
       }
     } else {
       console.log("✅ Relationships initialized (no saved data):", this.scores);
@@ -22,10 +22,8 @@ window.GameRelationships = {
   },
 
   update: function (character, delta) {
-    // Normalize to lowercase
     character = character.toLowerCase();
 
-    // Debug log
     console.log(
       "Attempting to update:",
       character,
@@ -84,7 +82,7 @@ window.GameRelationships = {
 
   /**
    * Get all character statuses as an object
-   * Returns: { toad: 'allied', luigi: 'enemy', peach: 'neutral' }
+   * Returns: { toad: 'allied', goomba: 'enemy', koopa: 'neutral' }
    */
   getAllStatuses: function () {
     const statuses = {};
@@ -104,13 +102,40 @@ window.GameRelationships = {
     return this.get(character) > 30;
   },
 
+  isEnemy: function (character) {
+    return this.get(character) <= -30;
+  },
+
+  setStatus: function (character, status) {
+    character = character.toLowerCase();
+
+    if (!this.scores.hasOwnProperty(character)) {
+      console.error("❌ Unknown character:", character);
+      return;
+    }
+
+    let newScore = 0;
+    if (status === "allied") {
+      newScore = 50;
+    } else if (status === "enemy") {
+      newScore = -50;
+    } else if (status === "neutral") {
+      newScore = 0;
+    }
+
+    this.scores[character] = newScore;
+    localStorage.setItem("fsm_relationships", JSON.stringify(this.scores));
+
+    console.log(`✅ ${character} status set to ${status} (score: ${newScore})`);
+  },
+
   reset: function () {
-    this.scores = { toad: 0, luigi: 0, peach: 0 };
+    this.scores = { toad: 0, goomba: 0, koopa: 0 };
     localStorage.removeItem("fsm_relationships");
     console.log("🔄 Relationships reset:", this.scores);
   },
 
-  // CONSEQUENCE MODIFIERS
+  // TOAD CONSEQUENCE MODIFIERS
   getPlatformMultiplier: function () {
     const score = this.get("toad");
     if (score < -50) return 0.6;
@@ -149,33 +174,76 @@ window.GameRelationships = {
     return this.get("toad") < -30;
   },
 
-  get1UpBonus: function () {
-    const score = this.get("luigi");
-    if (score > 50) return 3;
-    if (score > 30) return 1;
-    if (score < -30) return -1;
-    return 0;
+  shouldUpgradeItems: function () {
+    return this.get("toad") > 50;
   },
 
-  getTimerMultiplier: function () {
-    const score = this.get("luigi");
-    if (score < -50) return 0.8;
-    if (score < -30) return 0.9;
-    if (score > 30) return 1.2;
-    if (score > 50) return 1.4;
+  // GOOMBA CONSEQUENCE MODIFIERS
+  getGoombaSpawnMultiplier: function () {
+    const score = this.get("goomba");
+    if (score < -50) return 2.0; // Enemy: Double Goomba spawns
+    if (score < -30) return 1.5; // Enemy: 50% more Goombas
+    if (score > 30) return 0.0; // Allied: No Goombas
+    if (score > 50) return 0.0; // Allied: No Goombas
     return 1.0;
   },
 
-  shouldPeachHelp: function () {
-    return this.get("peach") > 30;
+  shouldSuppressGoombas: function () {
+    return this.get("goomba") > 30;
   },
 
-  shouldPeachBeAngry: function () {
-    return this.get("peach") < -30;
+  getGoombaPowerUpBonus: function () {
+    const score = this.get("goomba");
+    if (score > 50) return 3; // Extra fire flowers
+    if (score > 30) return 2; // Some fire flowers
+    return 0;
   },
 
-  shouldUpgradeItems: function () {
-    return this.get("toad") > 50;
+  shouldGoombasMultiply: function () {
+    return this.get("goomba") < -30;
+  },
+
+  // KOOPA CONSEQUENCE MODIFIERS
+  getKoopaSpawnMultiplier: function () {
+    const score = this.get("koopa");
+    if (score < -50) return 1.8; // Enemy: More Koopas
+    if (score < -30) return 1.4; // Enemy: Extra Koopas
+    if (score > 30) return 0.7; // Allied: Fewer Koopas
+    if (score > 50) return 0.5; // Allied: Much fewer Koopas
+    return 1.0;
+  },
+
+  shouldRevealSecrets: function () {
+    return this.get("koopa") > 30;
+  },
+
+  getKoopaSecretCount: function () {
+    const score = this.get("koopa");
+    if (score > 50) return 5; // Many secrets revealed
+    if (score > 30) return 3; // Some secrets revealed
+    return 0;
+  },
+
+  shouldHideBlocks: function () {
+    return this.get("koopa") < -30;
+  },
+
+  getKoopaSpringBonus: function () {
+    const score = this.get("koopa");
+    if (score > 50) return 3; // Extra springs
+    if (score > 30) return 2; // Some springs
+    return 0;
+  },
+
+  shouldAddFalseBlocks: function () {
+    return this.get("koopa") < -30;
+  },
+
+  getKoopaHighCoinBonus: function () {
+    const score = this.get("koopa");
+    if (score > 50) return 7; // Many high coins
+    if (score > 30) return 5; // Some high coins
+    return 0;
   },
 };
 
