@@ -1,15 +1,10 @@
-"""
-Mario Level Generator - Simple and Robust
-"""
-
-
 import sys
 import os
 import random
 import re
 
 
-print("🎮 Mario Level Generator")
+print("🎮 Mario Level Generator - Overwriting World Files")
 print("="*60)
 
 
@@ -23,7 +18,7 @@ except ImportError:
 
 # Config
 API_KEY = "AIzaSyAxlfwHUMQ5cxlfW2EiLpznh1QBf4BgsfY"
-MAPS_DIR = "Maps"
+MAPS_DIR = "Maps1"
 
 
 if not os.path.exists(MAPS_DIR):
@@ -31,15 +26,16 @@ if not os.path.exists(MAPS_DIR):
    sys.exit(1)
 
 
-num_levels = 4
+# Get world numbers to generate (e.g., "12" "13" "14")
 if len(sys.argv) > 1:
-   try:
-       num_levels = int(sys.argv[1])
-   except:
-       pass
+   # User specified which worlds (e.g., python generate_level.py 12 13 14)
+   world_numbers = sys.argv[1:]
+else:
+   # Default: regenerate World12-14 (first level set)
+   world_numbers = ["12", "13", "14"]
 
 
-print(f"Generating {num_levels} levels...\n")
+print(f"Will overwrite: {', '.join(['World' + w + '.js' for w in world_numbers])}\n")
 
 
 # Setup Gemini
@@ -85,12 +81,21 @@ if not examples:
 print()
 
 
-# Select themes to generate (cycle through available themes)
-available_themes = list(examples.keys())
-themes_to_generate = []
-for i in range(num_levels):
-   themes_to_generate.append(available_themes[i % len(available_themes)])
-random.shuffle(themes_to_generate)
+# Determine themes based on world numbers
+def get_theme_for_world(world_num):
+   """Determine theme based on world number pattern"""
+   last_digit = int(world_num) % 10
+   
+   if last_digit == 1:
+       return random.choice(['Overworld', 'Overworld Night'])
+   elif last_digit == 2:
+       return random.choice(['Underwater', 'Overworld'])
+   elif last_digit == 3:
+       return random.choice(['Overworld', 'Overworld Night'])
+   elif last_digit == 4:
+       return 'Castle'
+   else:
+       return random.choice(list(examples.keys()))
 
 
 def generate_level(attempt, theme):
@@ -99,7 +104,6 @@ def generate_level(attempt, theme):
    # Use the example for this theme
    example_code = examples.get(theme, list(examples.values())[0])
    theme_name = theme
-   """Generate one level"""
   
    prompt = f"""Generate a NEW Super Mario {theme_name} level based on this working example:
 
@@ -246,29 +250,33 @@ def validate(code):
    return True, f"✓ Spawn at (0,0,{w}), {enemies} enemies"
 
 
-def save_level(code):
-   """Save to file"""
-   existing = [f for f in os.listdir(MAPS_DIR)
-              if f.startswith('WorldGenerated') and f.endswith('.js')]
-   num = len(existing) + 1
-   filename = f"WorldGenerated{num}.js"
+def save_level(code, world_number):
+   """Save to specific World file"""
+   filename = f"World{world_number}.js"
    filepath = os.path.join(MAPS_DIR, filename)
+  
+   # Check if file exists
+   exists = os.path.exists(filepath)
   
    with open(filepath, 'w') as f:
        f.write(code)
   
-   return filename
+   action = "OVERWRITTEN" if exists else "CREATED"
+   return filename, action
 
 
 # Generate levels
 print(f"{'='*60}\n")
-print(f"Themes: {', '.join(themes_to_generate)}\n")
 success_count = 0
+overwrite_count = 0
+create_count = 0
 
 
-for i in range(num_levels):
-   theme = themes_to_generate[i]
-   print(f"Level {i+1}/{num_levels} ({theme}):")
+for world_num in world_numbers:
+   # Determine theme for this world number
+   theme = get_theme_for_world(world_num)
+   
+   print(f"World{world_num}.js ({theme}):")
   
    level_saved = False
   
@@ -292,11 +300,15 @@ for i in range(num_levels):
            print(f"❌ {message}")
            continue
       
-       # Save
-       filename = save_level(code)
-       print(f"✅ {filename} ({message})")
+       # Save - OVERWRITE specific World file
+       filename, action = save_level(code, world_num)
+       print(f"✅ {filename} [{action}] ({message})")
       
        success_count += 1
+       if action == "OVERWRITTEN":
+           overwrite_count += 1
+       else:
+           create_count += 1
        level_saved = True
        break
   
@@ -307,7 +319,8 @@ for i in range(num_levels):
 
 
 print(f"{'='*60}")
-print(f"RESULTS: {success_count}/{num_levels} successful")
-print(f"Saved in: {MAPS_DIR}/WorldGenerated*.js")
+print(f"RESULTS: {success_count}/{len(world_numbers)} successful")
+print(f"  📝 Overwritten: {overwrite_count} files")
+print(f"  ✨ Created new: {create_count} files")
+print(f"Saved in: {MAPS_DIR}/World*.js")
 print(f"{'='*60}")
-
