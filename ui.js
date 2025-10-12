@@ -11,25 +11,30 @@ function start() {
   // Don't double start
   if(window.loadstart) return;
   window.loadstart = true;
+
+  // Remove editor menu completely
+  var editorElem = document.getElementById("in_editor");
+  if (editorElem) editorElem.remove();
   
+
   // Know whether this is being run locally
   setLocalStatus();
-  
+
   // Quick UI references
   setReferences();
-  
+
   // Map selection
   setMapSelector();
-  
-  // Level editor
+
+  // Level editor (disabled)
   setLevelEditor();
-  
+
   // Options
   setOptions();
-  
+
   // Key Mapping Menu
   setKeyMappingMenu();
-  
+
   // Make lots of friends
   setCheats();
 }
@@ -131,11 +136,9 @@ function setGameMapRandom() {
 }
 
 function setLevelEditor() {
-  var out = document.getElementById("in_editor"),
-      blurb = "Why use Nintendo's?<br />";
-  button = createAdderBigMap("Make your<br />own levels!", "startEditor", true);
-  out.innerHTML += blurb + button + "<br />You can save these as text files when you're done.";
+  // Editor menu completely disabled — nothing will appear
 }
+
 
 function startEditor() {
   game.postMessage({
