@@ -235,9 +235,27 @@
         Press 'R' to toggle
       </div>
     </div>
+    <div id="loading-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+     background: rgba(0, 0, 0, 0.95); color: #fff; z-index: 99999; justify-content: center; align-items: center; 
+     flex-direction: column; font-family: Arial, sans-serif;">
+  <h1 style="font-size: 48px; margin-bottom: 20px;">🎮</h1>
+  <h2>Generating New Levels...</h2>
+  <p style="margin-top: 10px; opacity: 0.7;">This may take 30-60 seconds</p>
+  <div style="margin-top: 20px; width: 300px; height: 4px; background: #333; border-radius: 2px; overflow: hidden;">
+    <div id="progress-bar" style="width: 0%; height: 100%; background: #4CAF50; animation: progress 60s linear;"></div>
+  </div>
+</div>
+
+<style>
+@keyframes progress {
+  from { width: 0%; }
+  to { width: 90%; }
+}
+</style>
 
     <!-- ✨ Scripts for debug panel and iframe communication -->
     <script>
+      
       // Dismiss audio notice
       function dismissAudioNotice() {
         const notice = document.getElementById("audio-notice");
@@ -449,6 +467,40 @@
       console.log('  game.GameRelationships.update("toad", 50)');
       console.log("  game.GameRelationships.getAll()");
       console.log('  game.StoryTrigger.test("toad")');
+    window.addEventListener('DOMContentLoaded', function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  if (!urlParams.has('generated')) {
+    // Show loading screen immediately
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+      loadingScreen.style.display = 'flex';
+    }
+    
+    console.log('🎮 Generating levels... (this takes 30-60 seconds)');
+    
+    fetch('/generate-levels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ worlds: ['12', '13', '14'] })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('✅ Levels generated!', data);
+      // Reload to play new levels
+      window.location.href = window.location.pathname + '?generated=1';
+    })
+    .catch(error => {
+      console.error('❌ Error:', error);
+      if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+      }
+      alert('Failed to generate levels: ' + error.message);
+    });
+  } else {
+    console.log('✅ Playing freshly generated levels!');
+  }
+});
     </script>
   </body>
 </html>
