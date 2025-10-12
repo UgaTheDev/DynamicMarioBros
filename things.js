@@ -2574,6 +2574,7 @@ window.listAllMaps = listAllMaps;
 console.log('[CASTLE FIX] Castle completion system loaded');
 console.log('[CASTLE FIX] Use listAllMaps() in console to see available levels');
 console.log('[CASTLE FIX] Mario will now properly advance after castle dialogue');
+
 function TreeTop(me, width) {
   // Tree trunks are scenery
   me.width = width * 8;

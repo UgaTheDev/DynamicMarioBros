@@ -55,6 +55,6 @@ map.areas = [
     fillPreThing(Stone, 976, 24, 2, 1, 32, 0, 2, 3);
     
     fillPreThing(Brick, 1024, 64, 6, 1, 8);
-    endCastleInside(1024);
+    endCastleInside(1024, "Goomba");
   })
 ];

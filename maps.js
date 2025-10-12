@@ -978,6 +978,9 @@ function endCastleInside(xloc, last, hard) {
 // In maps.js
 
 // This helper function will turn any character into a static, non-moving object.
+// In maps.js
+
+// This helper function will turn any character into a static, non-moving object.
 function freezeCharacterAsNPC(character) {
     character.movement = false; // Stop its unique movement logic
     character.xvel = 0;         // Stop horizontal velocity
@@ -989,143 +992,116 @@ function freezeCharacterAsNPC(character) {
 
 // This is the final, consolidated function for all castle endings.
 function endCastleInsideFinal(xloc, characterName) {
-  var stopper = pushPreFuncCollider(xloc + 180, collideCastleNPC).object,
-      style = { visibility: "hidden" },
-      npc; // This will hold our created character
+  // This invisible object will trigger the dialogue when touched
+  var stopper = pushPreFuncCollider(xloc + 180, collideCastleNPC).object;
+  
+  // Create an array to hold the dialogue data
+  stopper.dialogueData = [];
+  var npc;
 
-  // This switch statement chooses the correct character and dialogue
+  // This switch statement chooses the character and STORES the dialogue info
   switch (characterName) {
     case "Peach":
       pushPreThing(Peach, xloc + 194, 12).object;
-      stopper.text = [
-        pushPreText({innerHTML: "THANK YOU " + window.player.title.toUpperCase() + "!", style: style}, xloc + 160, 66).object,
-        pushPreText({innerHTML: "YOUR QUEST IS OVER.<BR>WE PRESENT YOU A NEW QUEST.", style: style}, xloc + 148, 50).object,
-        pushPreText({innerHTML: "PRESS BUTTON B<BR>TO SELECT A WORLD.", style: style}, xloc + 148, 26).object
-      ];
+      stopper.dialogueData.push({ text: "THANK YOU " + window.player.title.toUpperCase() + "!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "YOUR QUEST IS OVER.<BR>WE PRESENT YOU A NEW QUEST.", x: 148, y: 50 });
+      stopper.dialogueData.push({ text: "PRESS BUTTON B<BR>TO SELECT A WORLD.", x: 148, y: 26 });
       break;
 
     case "Luigi":
       pushPreThing(LuigiNPC, xloc + 194, 8).object;
-      stopper.text = [
-        pushPreText({innerHTML: "HEY, BRO!", style: style}, xloc + 160, 66).object,
-        pushPreText({innerHTML: "YOU HANDLED THAT PRETTY WELL!", style: style}, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "HEY, BRO!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "YOU HANDLED THAT PRETTY WELL!", x: 148, y: 50 });
       break;
 
     case "Goomba":
       npc = pushPreThing(Goomba, xloc + 194, 8).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({innerHTML: "...", style: style}, xloc + 160, 66).object,
-        pushPreText({innerHTML: "NO PRINCESS.<BR>ONLY GOOMBA.", style: style}, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "...", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "NO PRINCESS.<BR>ONLY GOOMBA.", x: 148, y: 50 });
       break;
 
     case "Koopa":
       npc = pushPreThing(Koopa, xloc + 194, 12).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "WHOA, THANKS!", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "I THOUGHT I WAS A GONER!<BR>...WAIT, YOU'RE NOT ONE OF US!", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "WHOA, THANKS!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "I THOUGHT I WAS A GONER!<BR>...WAIT, YOU'RE NOT ONE OF US!", x: 148, y: 50 });
       break;
 
     case "HammerBro":
       npc = pushPreThing(HammerBro, xloc + 194, 12).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "HEY, WATCH THE HELMET!", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "THE PRINCESS LEFT<BR>AGES AGO, PAL.", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "HEY, WATCH THE HELMET!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "THE PRINCESS LEFT<BR>AGES AGO, PAL.", x: 148, y: 50 });
       break;
 
     case "Bowser":
       npc = pushPreThing(Bowser, xloc + 190, 8).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({innerHTML: "FOOL!", style: style}, xloc + 160, 66).object,
-        pushPreText({innerHTML: "THAT WAS MY DECOY BROTHER!<BR>YOU'LL NEVER DEFEAT ME!", style: style}, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "FOOL!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "THAT WAS MY DECOY BROTHER!<BR>YOU'LL NEVER DEFEAT ME!", x: 148, y: 50 });
       break;
 
     case "Blooper":
       npc = pushPreThing(Blooper, xloc + 194, 12).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "*bloop bloop*", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "(THE PRINCESS IS<BR>SOMEWHERE DRY!)", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "*bloop bloop*", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "(THE PRINCESS IS<BR>SOMEWHERE DRY!)", x: 148, y: 50 });
       break;
 
     case "CheepCheep":
       npc = pushPreThing(CheepCheep, xloc + 194, 8).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "*glub glub*", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "(WRONG CASTLE,<BR>BUB.)", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "*glub glub*", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "(WRONG CASTLE,<BR>BUB.)", x: 148, y: 50 });
       break;
 
     case "Lakitu":
       npc = pushPreThing(Lakitu, xloc + 194, 12).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "NICE AXE SKILLS!", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "TOO BAD I ALREADY<BR>FLEW THE PRINCESS AWAY!", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "NICE AXE SKILLS!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "TOO BAD I ALREADY<BR>FLEW THE PRINCESS AWAY!", x: 148, y: 50 });
       break;
 
     case "Spiny":
       npc = pushPreThing(Spiny, xloc + 194, 8).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "OW.", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "THE PRINCESS TOLD ME<BR>NOT TO TALK TO STRANGERS.", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "OW.", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "THE PRINCESS TOLD ME<BR>NOT TO TALK TO STRANGERS.", x: 148, y: 50 });
       break;
 
     case "Beetle":
       npc = pushPreThing(Beetle, xloc + 194, 8).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "*Stares blankly*", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "SHE'S NOT HERE. SURPRISE.", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "*Stares blankly*", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "SHE'S NOT HERE. SURPRISE.", x: 148, y: 50 });
       break;
-      
+
     case "Pirhana":
       npc = pushPreThing(Pirhana, xloc + 194, 12).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "*chomp chomp*", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "I ATE THE PRINCESS.<BR>...JUST KIDDING.", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "*chomp chomp*", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "I ATE THE PRINCESS.<BR>...JUST KIDDING.", x: 148, y: 50 });
       break;
-      
+
     case "Podoboo":
       npc = pushPreThing(Podoboo, xloc + 194, 8).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "*fwoosh*", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "THE LAVA IS WARMER<BR>IN THE NEXT CASTLE.", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "*fwoosh*", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "THE LAVA IS WARMER<BR>IN THE NEXT CASTLE.", x: 148, y: 50 });
       break;
-      
+
     case "BulletBill":
       npc = pushPreThing(BulletBill, xloc + 194, 7).object;
       freezeCharacterAsNPC(npc);
-      stopper.text = [
-        pushPreText({ innerHTML: "...", style: style }, xloc + 160, 66).object,
-        pushPreText({ innerHTML: "SHE FLEW AWAY.<BR>I'M JEALOUS.", style: style }, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "...", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "SHE FLEW AWAY.<BR>I'M JEALOUS.", x: 148, y: 50 });
       break;
 
     default: // This will be Toad
       pushPreThing(Toad, xloc + 194, 12).object;
-      stopper.text = [
-        pushPreText({innerHTML: "THANK YOU " + window.player.title.toUpperCase() + "!", style: style}, xloc + 160, 66).object,
-        pushPreText({innerHTML: "BUT OUR PRINCESS IS IN<BR>ANOTHER CASTLE!", style: style}, xloc + 148, 50).object
-      ];
+      stopper.dialogueData.push({ text: "THANK YOU " + window.player.title.toUpperCase() + "!", x: 160, y: 66 });
+      stopper.dialogueData.push({ text: "BUT OUR PRINCESS IS IN<BR>ANOTHER CASTLE!", x: 148, y: 50 });
       break;
   }
 }
