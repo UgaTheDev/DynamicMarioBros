@@ -15,7 +15,7 @@ body {
   position: absolute;
   height: 49px;
   width: 100%;
-	background-image:url('Theme/Header.gif');
+	background-image:url('Theme/Header.png');
 	background-repeat:no-repeat;
 	background-color:#070707;
 }
@@ -43,13 +43,8 @@ iframe {
   text-align: center;
 }
 
-#out_editor { float: left; }
-
 #out_mapselect { float: right; }
 
-#out_options { margin: 7px auto; }
-
-#out_keymapping { margin: 7px auto; }
 
 #in_options { position:absolute; z-index:-1;}
 
