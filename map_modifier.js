@@ -1306,7 +1306,6 @@ const MapModifier = {
     }
     return enemy;
   },
-
   spawnPowerUp(type, x, y, tag) {
     console.log(`⭐ Spawning ${type} power-up at (${x}, ${y}) [${tag}]`);
     let powerup;
