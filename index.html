@@ -63,30 +63,17 @@
 
     <!-- Game itself -->
     <iframe id="game" src="mario.html"></iframe>
-
+    
     <!-- After the game (retracts as needed) -->
     <div id="after">
-      <!-- Level Editor popup -->
-      <div id="out_editor" class="bar1">
-        <div class="label">- Level Editor -</div>
-        <div id="in_editor" class="expander"></div>
-      </div>
+      
       <!-- Map Selector popup -->
       <div id="out_mapselect" class="bar1">
         <div class="label">- Map Select -</div>
         <div id="in_mapselect" class="expander"></div>
       </div>
-      <!-- Options popup -->
-      <div id="out_options" class="bar1">
-        <div class="label">- Options -</div>
-        <div id="in_options" class="expander"></div>
-      </div>
-      <!-- Key Mapping popup -->
-      <div id="out_keymapping" class="bar1">
-        <div class="label">- Keys Mapping -</div>
-        <div id="in_keymapping" class="expander"></div>
-      </div>
     </div>
+    
 
     <!-- ✨ Debug panel (press 'D' to toggle) -->
     <div
@@ -244,7 +231,7 @@
           color: #888;
         "
       >
-        Press 'D' to toggle
+        Press 'R' to toggle
       </div>
     </div>
 
@@ -281,7 +268,7 @@
 
       // Toggle debug panel with 'D' key
       document.addEventListener("keydown", function (e) {
-        if (e.key === "d" || e.key === "D") {
+        if (e.key === "r" || e.key === "R") {
           const panel = document.getElementById("debug-panel");
           if (panel) {
             const isVisible = panel.style.display !== "none";
@@ -404,7 +391,7 @@
           const panel = document.getElementById("debug-panel");
           if (panel) {
             panel.style.display = "block";
-            console.log('💡 Tip: Press "D" key to toggle debug panel');
+            console.log('💡 Tip: Press "R" key to toggle debug panel');
 
             // Auto-hide after 4 seconds
             setTimeout(function () {
@@ -423,7 +410,7 @@
         "%cDebug Commands:",
         "color: #00ff00; font-size: 14px; font-weight: bold;"
       );
-      console.log("  Press D key - Toggle debug panel");
+      console.log("  Press R key - Toggle debug panel");
       console.log("  testToad() - Test Toad story scene");
       console.log("  testLuigi() - Test Luigi story scene");
       console.log("  testPeach() - Test Peach story scene");
