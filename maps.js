@@ -223,9 +223,59 @@ function shiftToLocation(loc) {
   // Texts are bound-check checked periodically for peformance reasons
   TimeHandler.addEventInterval(checkTexts, 117, Infinity);
 
+  // At the end of shiftToLocation, replace with this safer version:
   if (map.area.setting && map.area.setting.indexOf("Castle") !== -1) {
-    if (window.ToadDialogueTrigger) {
-      ToadDialogueTrigger.start();
+    console.log("🏰 Castle level detected");
+
+    // Try to set up the trigger, with a retry mechanism
+    function setupToadTrigger() {
+      if (window.ToadDialogueTrigger) {
+        console.log("✅ ToadDialogueTrigger found! Setting up...");
+
+        // Set trigger position for where Toad is
+        ToadDialogueTrigger.setTriggerPosition(400, 450);
+        ToadDialogueTrigger.start();
+
+        // Add the checking interval
+        TimeHandler.addEventInterval(
+          function () {
+            if (
+              window.ToadDialogueTrigger &&
+              window.ToadDialogueTrigger.active &&
+              window.player
+            ) {
+              console.log("📍 Mario at:", Math.round(player.left));
+              window.ToadDialogueTrigger.check();
+            }
+          },
+          10,
+          Infinity
+        );
+
+        console.log("✅ ToadDialogueTrigger fully configured");
+        return true;
+      }
+      return false;
+    }
+
+    // Try immediately
+    if (!setupToadTrigger()) {
+      console.log("⏳ ToadDialogueTrigger not ready, retrying...");
+      // If it failed, retry after a short delay
+      TimeHandler.addEvent(function () {
+        if (!setupToadTrigger()) {
+          console.error("❌ ToadDialogueTrigger still not found after retry!");
+          console.log(
+            "Available window properties:",
+            Object.keys(window).filter(
+              (k) =>
+                k.includes("Toad") ||
+                k.includes("Dialogue") ||
+                k.includes("Relationship")
+            )
+          );
+        }
+      }, 3);
     }
   }
 }
@@ -403,31 +453,6 @@ function spawnMap() {
     ++current;
   }
   map.current_scenery = current;
-
-  // Activate dialogue trigger for castle levels
-  if (
-    map.area &&
-    map.area.setting &&
-    map.area.setting.indexOf("Castle") !== -1
-  ) {
-    if (window.ToadDialogueTrigger) {
-      console.log("🏰 Castle level detected - activating ToadDialogueTrigger");
-      ToadDialogueTrigger.start();
-
-      // Use TimeHandler instead of setInterval - more reliable in the game loop
-      TimeHandler.addEventInterval(
-        function () {
-          if (window.ToadDialogueTrigger && window.ToadDialogueTrigger.active) {
-            window.ToadDialogueTrigger.check();
-          }
-        },
-        10,
-        Infinity
-      ); // Check every 10 game ticks
-
-      console.log("✅ Added ToadDialogueTrigger to TimeHandler");
-    }
-  }
 }
 
 // Entry Functions
@@ -2025,6 +2050,7 @@ function World13(map) {
     }),
   ];
 }
+
 function World14(map) {
   map.time = 300;
   map.locs = [new Location(0, startCastle)];
@@ -2069,19 +2095,16 @@ function World14(map) {
       pushPreThing(Stone, 928, 24, 4, 3);
       pushPreThing(Stone, 984, 24, 5, 3);
       pushPreThing(Stone, 984, 80, 5, 2);
+
       endCastleInside(1024, "Toad");
+
       pushPreThing(Platform, 1108, 56, 4, [
         moveSliding,
         1080,
         1112,
       ]).object.nocollidechar = true;
 
-      // ACTIVATE TRIGGER - Position adjusted to Toad's location (1024)
-      if (window.ToadDialogueTrigger) {
-        ToadDialogueTrigger.setTriggerPosition(1000, 1040); // Trigger 24 pixels before Toad
-        ToadDialogueTrigger.start();
-        console.log("🏰 Castle 1-4 loaded - Toad dialogue trigger activated");
-      }
+      // REMOVE THE TRIGGER CODE FROM HERE
     }),
   ];
 }
