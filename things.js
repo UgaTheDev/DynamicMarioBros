@@ -2300,7 +2300,7 @@ function CastleAxeFalls(me, collider) {
   // Pause Player & wipe the other characters
   notime = nokeys = true;
   thingStoreVelocity(me);
-  killOtherCharacters();
+  //killOtherCharacters();
   TimeHandler.addEvent(killNormal, 7, axe.chain);
   TimeHandler.addEvent(CastleAxeKillsBridge, 14, axe.bridge, axe);
   AudioPlayer.pauseTheme();
@@ -2346,16 +2346,366 @@ function Peach(me) {
   setSolid(me, "peach npc");
 }
 // CollideCastleNPC is actually called by the FuncCollider
-function collideCastleNPC(me, collider) {
-  killNormal(collider);
-  me.keys.run = 0;
-  TimeHandler.addEvent(function(text) {
-    var i;
-    for(i = 0; i < text.length; ++i)
-      TimeHandler.addEvent(proliferate, i * 70, text[i].element, {style: {visibility: "visible"}});
-    TimeHandler.addEvent(endLevel, (i + 3) * 70);
-  }, 21, collider.text);
-} 
+// In things.js
+
+function collideCastleNPC(playerObject, colliderObject) {
+  // Only trigger once
+  if (colliderObject.activated) return;
+  colliderObject.activated = true;
+  
+  // Make sure it's the player who hit the trigger
+  if (!playerObject.player) return;
+
+  // Stop Mario's movement but keep him visible
+  playerObject.keys.run = 0;
+  playerObject.keys.sprint = 0;
+  playerObject.xvel = 0;
+  playerObject.yvel = 0;
+  nokeys = true;
+  notime = true;
+  
+  // Get dialogue data
+  var dialogue = colliderObject.dialogueData;
+  if (!dialogue || dialogue.length === 0) {
+    // If there is no dialogue, just end the level after a short pause
+    TimeHandler.addEvent(function() {
+      endLevel();
+    }, 70);
+    return;
+  }
+  
+  var activeTextElements = [];
+  var currentDialogueIndex = 0;
+
+  // Function to show one line of dialogue
+  function showDialogueLine(index) {
+    // Clear previous text elements
+    for (var i = 0; i < activeTextElements.length; i++) {
+      if (activeTextElements[i] && activeTextElements[i].parentNode) {
+        activeTextElements[i].parentNode.removeChild(activeTextElements[i]);
+      }
+    }
+    activeTextElements = [];
+    
+    // If we've shown all dialogue, advance to next level
+    if (index >= dialogue.length) {
+      TimeHandler.addEvent(function() {
+        advanceToNextWorld();
+      }, 100);
+      return;
+    }
+
+    // Get current dialogue data
+    var data = dialogue[index];
+    
+    // Calculate RELATIVE position from NPC location (like original game)
+    // The NPC collider is positioned in the castle, so text should be relative to it
+    var textX = colliderObject.left + (data.x * unitsize) - gamescreen.left;
+    var textY = data.y * unitsize;
+    
+    var textElement = addText(data.text, textX, textY);
+    textElement.style.visibility = "visible";
+    activeTextElements.push(textElement);
+    
+    // Show next dialogue line after 3 seconds
+    TimeHandler.addEvent(function() {
+      showDialogueLine(index + 1);
+    }, 140);
+  }
+
+  // Start showing dialogue after a short delay
+  TimeHandler.addEvent(function() {
+    showDialogueLine(0);
+  }, 21);
+}
+
+// ===================================================================
+// Function to advance to the next world/level
+// ===================================================================
+
+function advanceToNextWorld() {
+  console.log('[CASTLE] Advancing to next level...');
+  
+  // Clear any remaining text elements
+  if (window.texts) {
+    for (var i = texts.length - 1; i >= 0; i--) {
+      if (texts[i] && texts[i].parentNode) {
+        texts[i].parentNode.removeChild(texts[i]);
+      }
+    }
+  }
+  
+  // Get current world and level
+  var currentWorld = currentmap[0];
+  var currentLevel = currentmap[1];
+  
+  console.log('[CASTLE] Current: World ' + currentWorld + '-' + currentLevel);
+  
+  // Calculate next level
+  var nextWorld = currentWorld;
+  var nextLevel = currentLevel + 1;
+  
+  // If completed level 4, go to next world's level 1
+  if (currentLevel >= 4) {
+    nextWorld = currentWorld + 1;
+    nextLevel = 1;
+  }
+  
+  console.log('[CASTLE] Next: World ' + nextWorld + '-' + nextLevel);
+  
+  // Check if next world exists
+  var mapExists = false;
+  if (window.mapfuncs && 
+      window.mapfuncs[nextWorld] && 
+      typeof window.mapfuncs[nextWorld][nextLevel] === 'function') {
+    mapExists = true;
+  }
+  
+  if (!mapExists) {
+    console.log('[CASTLE] Next world not found! Looping back to 1-1');
+    nextWorld = 1;
+    nextLevel = 1;
+  }
+  
+  // Wait a moment, then load next level
+  TimeHandler.addEvent(function() {
+    try {
+      // Store player stats before transitioning
+      if (window.player) {
+        storePlayerStats();
+      }
+      
+      // Re-enable controls
+      nokeys = false;
+      notime = false;
+      
+      // Load the next map
+      console.log('[CASTLE] Loading World ' + nextWorld + '-' + nextLevel);
+      setMap(nextWorld, nextLevel);
+      
+      console.log('[CASTLE] Successfully loaded!');
+    } catch (error) {
+      console.error('[CASTLE] Error loading next level:', error);
+      // Fallback: try to load 1-1
+      TimeHandler.addEvent(function() {
+        setMap(1, 1);
+      }, 70);
+    }
+  }, 100);
+}
+
+// ===================================================================
+// Helper function to check if a map exists
+// ===================================================================
+
+function checkMapExists(world, level) {
+  try {
+    if (!window.mapfuncs) {
+      console.error('[MAP CHECK] mapfuncs not initialized');
+      return false;
+    }
+    
+    if (!window.mapfuncs[world]) {
+      console.warn('[MAP CHECK] World ' + world + ' not found');
+      return false;
+    }
+    
+    if (!window.mapfuncs[world][level]) {
+      console.warn('[MAP CHECK] Level ' + level + ' not found in World ' + world);
+      return false;
+    }
+    
+    if (typeof window.mapfuncs[world][level] !== 'function') {
+      console.warn('[MAP CHECK] Map ' + world + '-' + level + ' is not a function');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('[MAP CHECK] Error checking map existence:', error);
+    return false;
+  }
+}
+
+// ===================================================================
+// Debug helper - call this to see all available maps
+// ===================================================================
+
+function listAllMaps() {
+  console.log('=== AVAILABLE MAPS ===');
+  
+  if (!window.mapfuncs) {
+    console.log('ERROR: mapfuncs not initialized!');
+    return;
+  }
+  
+  for (var world = 1; world <= 9; world++) {
+    if (window.mapfuncs[world]) {
+      var levels = [];
+      for (var level = 1; level <= 4; level++) {
+        if (typeof window.mapfuncs[world][level] === 'function') {
+          levels.push(level);
+        }
+      }
+      if (levels.length > 0) {
+        console.log('World ' + world + ': Levels ' + levels.join(', '));
+      }
+    }
+  }
+  
+  console.log('=====================');
+}
+
+// Make debug function available globally
+window.listAllMaps = listAllMaps;
+
+console.log('[CASTLE FIX] Castle completion system loaded');
+console.log('[CASTLE FIX] Use listAllMaps() in console to see available levels');
+console.log('[CASTLE FIX] Mario will now properly advance after castle dialogue');
+
+// ===================================================================
+// Function to advance to the next world/level
+// ===================================================================
+
+function advanceToNextWorld() {
+  console.log('[CASTLE] Advancing to next level...');
+  
+  // Clear any remaining text elements
+  if (window.texts) {
+    for (var i = texts.length - 1; i >= 0; i--) {
+      if (texts[i] && texts[i].parentNode) {
+        texts[i].parentNode.removeChild(texts[i]);
+      }
+    }
+  }
+  
+  // Get current world and level
+  var currentWorld = currentmap[0];
+  var currentLevel = currentmap[1];
+  
+  console.log('[CASTLE] Current: World ' + currentWorld + '-' + currentLevel);
+  
+  // Calculate next level
+  var nextWorld = currentWorld;
+  var nextLevel = currentLevel + 1;
+  
+  // If completed level 4, go to next world's level 1
+  if (currentLevel >= 4) {
+    nextWorld = currentWorld + 1;
+    nextLevel = 1;
+  }
+  
+  console.log('[CASTLE] Next: World ' + nextWorld + '-' + nextLevel);
+  
+  // Check if next world exists
+  var mapExists = false;
+  if (window.mapfuncs && 
+      window.mapfuncs[nextWorld] && 
+      typeof window.mapfuncs[nextWorld][nextLevel] === 'function') {
+    mapExists = true;
+  }
+  
+  if (!mapExists) {
+    console.log('[CASTLE] Next world not found! Looping back to 1-1');
+    nextWorld = 1;
+    nextLevel = 1;
+  }
+  
+  // Wait a moment, then load next level
+  TimeHandler.addEvent(function() {
+    try {
+      // Store player stats before transitioning
+      if (window.player) {
+        storePlayerStats();
+      }
+      
+      // Re-enable controls
+      nokeys = false;
+      notime = false;
+      
+      // Load the next map
+      console.log('[CASTLE] Loading World ' + nextWorld + '-' + nextLevel);
+      setMap(nextWorld, nextLevel);
+      
+      console.log('[CASTLE] Successfully loaded!');
+    } catch (error) {
+      console.error('[CASTLE] Error loading next level:', error);
+      // Fallback: try to load 1-1
+      TimeHandler.addEvent(function() {
+        setMap(1, 1);
+      }, 70);
+    }
+  }, 100);
+}
+
+// ===================================================================
+// Helper function to check if a map exists
+// ===================================================================
+
+function checkMapExists(world, level) {
+  try {
+    if (!window.mapfuncs) {
+      console.error('[MAP CHECK] mapfuncs not initialized');
+      return false;
+    }
+    
+    if (!window.mapfuncs[world]) {
+      console.warn('[MAP CHECK] World ' + world + ' not found');
+      return false;
+    }
+    
+    if (!window.mapfuncs[world][level]) {
+      console.warn('[MAP CHECK] Level ' + level + ' not found in World ' + world);
+      return false;
+    }
+    
+    if (typeof window.mapfuncs[world][level] !== 'function') {
+      console.warn('[MAP CHECK] Map ' + world + '-' + level + ' is not a function');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('[MAP CHECK] Error checking map existence:', error);
+    return false;
+  }
+}
+
+// ===================================================================
+// Debug helper - call this to see all available maps
+// ===================================================================
+
+function listAllMaps() {
+  console.log('=== AVAILABLE MAPS ===');
+  
+  if (!window.mapfuncs) {
+    console.log('ERROR: mapfuncs not initialized!');
+    return;
+  }
+  
+  for (var world = 1; world <= 9; world++) {
+    if (window.mapfuncs[world]) {
+      var levels = [];
+      for (var level = 1; level <= 4; level++) {
+        if (typeof window.mapfuncs[world][level] === 'function') {
+          levels.push(level);
+        }
+      }
+      if (levels.length > 0) {
+        console.log('World ' + world + ': Levels ' + levels.join(', '));
+      }
+    }
+  }
+  
+  console.log('=====================');
+}
+
+// Make debug function available globally
+window.listAllMaps = listAllMaps;
+
+console.log('[CASTLE FIX] Castle completion system loaded');
+console.log('[CASTLE FIX] Use listAllMaps() in console to see available levels');
+console.log('[CASTLE FIX] Mario will now properly advance after castle dialogue');
 
 function TreeTop(me, width) {
   // Tree trunks are scenery
