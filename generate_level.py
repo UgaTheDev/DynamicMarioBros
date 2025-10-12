@@ -18,7 +18,7 @@ except ImportError:
 
 # Config
 API_KEY = "AIzaSyAxlfwHUMQ5cxlfW2EiLpznh1QBf4BgsfY"
-MAPS_DIR = "Maps1"
+MAPS_DIR = "maps1"
 
 
 if not os.path.exists(MAPS_DIR):
