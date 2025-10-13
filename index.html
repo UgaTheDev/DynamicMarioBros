@@ -35,11 +35,10 @@
         Welcome to Super Artificial Bros!
       </div>
       <div style="font-size: 12px; margin-bottom: 30px; line-height: 1.8">
-        Click to enable sound and start the game(Check out levels 1-2,1-3,1-4)
+        Click to enable sound and start the game
       </div>
       <button
         onclick="dismissAudioNotice();generateNewLevels()"
-   
         style="
           padding: 15px 40px;
           background: #ff0000;
@@ -57,26 +56,21 @@
     </div>
 
     <!-- Top header -->
-    <div id="header">
-      <!-- <img id="beta" src="Theme/Beta.png"> -->
-      <!-- <span id="version"></span> -->
-    </div>
+    <div id="header"></div>
 
     <!-- Game itself -->
     <iframe id="game" src="mario.html"></iframe>
-    
+
     <!-- After the game (retracts as needed) -->
     <div id="after">
-      
       <!-- Map Selector popup -->
       <div id="out_mapselect" class="bar1">
         <div class="label">- Map Select -</div>
         <div id="in_mapselect" class="expander"></div>
       </div>
     </div>
-    
 
-    <!-- ✨ Debug panel (press 'D' to toggle) -->
+    <!-- ✨ Debug panel (press 'R' to toggle) -->
     <div
       id="debug-panel"
       style="
@@ -122,24 +116,24 @@
         style="
           margin: 8px 0;
           padding: 5px;
-          background: rgba(0, 255, 0, 0.2);
-          border-left: 3px solid #00ff00;
+          background: rgba(139, 69, 19, 0.2);
+          border-left: 3px solid #8b4513;
         "
       >
-        <span style="color: #00ff00">👨 Luigi:</span>
-        <span id="luigi-score" style="float: right; font-weight: bold">0</span>
+        <span style="color: #8b4513">👾 Goomba:</span>
+        <span id="goomba-score" style="float: right; font-weight: bold">0</span>
       </div>
 
       <div
         style="
           margin: 8px 0;
           padding: 5px;
-          background: rgba(255, 182, 193, 0.2);
-          border-left: 3px solid #ffb6c1;
+          background: rgba(0, 255, 0, 0.2);
+          border-left: 3px solid #00ff00;
         "
       >
-        <span style="color: #ffb6c1">👑 Peach:</span>
-        <span id="peach-score" style="float: right; font-weight: bold">0</span>
+        <span style="color: #00ff00">🐢 Koopa:</span>
+        <span id="koopa-score" style="float: right; font-weight: bold">0</span>
       </div>
 
       <div
@@ -165,7 +159,26 @@
         </button>
 
         <button
-          onclick="testLuigi()"
+          onclick="testGoomba()"
+          style="
+            width: 100%;
+            margin: 3px 0;
+            padding: 8px;
+            background: #8b4513;
+            color: white;
+            border: 2px solid white;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            cursor: pointer;
+          "
+          onmouseover="this.style.background='#6B3510'"
+          onmouseout="this.style.background='#8B4513'"
+        >
+          Test Goomba Scene
+        </button>
+
+        <button
+          onclick="testKoopa()"
           style="
             width: 100%;
             margin: 3px 0;
@@ -180,26 +193,7 @@
           onmouseover="this.style.background='#00cc00'"
           onmouseout="this.style.background='#00ff00'"
         >
-          Test Luigi Scene
-        </button>
-
-        <button
-          onclick="testPeach()"
-          style="
-            width: 100%;
-            margin: 3px 0;
-            padding: 8px;
-            background: #ffb6c1;
-            color: white;
-            border: 2px solid white;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 8px;
-            cursor: pointer;
-          "
-          onmouseover="this.style.background='#ff9eb0'"
-          onmouseout="this.style.background='#ffb6c1'"
-        >
-          Test Peach Scene
+          Test Koopa Scene
         </button>
 
         <button
@@ -235,62 +229,97 @@
         Press 'R' to toggle
       </div>
     </div>
-    <div id="loading-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-     background: rgba(0, 0, 0, 0.95); color: #fff; z-index: 99999; justify-content: center; align-items: center; 
-     flex-direction: column; font-family: Arial, sans-serif;">
-  <h1 style="font-size: 48px; margin-bottom: 20px;">🎮</h1>
-  <h2>Generating New Levels...</h2>
-  <p style="margin-top: 10px; opacity: 0.7;">This may take 30-60 seconds</p>
-  <div style="margin-top: 20px; width: 300px; height: 4px; background: #333; border-radius: 2px; overflow: hidden;">
-    <div id="progress-bar" style="width: 0%; height: 100%; background: #4CAF50; animation: progress 60s linear;"></div>
-  </div>
-</div>
 
-<style>
-@keyframes progress {
-  from { width: 0%; }
-  to { width: 90%; }
-}
-</style>
+    <div
+      id="loading-screen"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        color: #fff;
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        font-family: Arial, sans-serif;
+      "
+    >
+      <h1 style="font-size: 48px; margin-bottom: 20px">🎮</h1>
+      <h2>Generating New Levels...</h2>
+      <p style="margin-top: 10px; opacity: 0.7">This may take 30-60 seconds</p>
+      <div
+        style="
+          margin-top: 20px;
+          width: 300px;
+          height: 4px;
+          background: #333;
+          border-radius: 2px;
+          overflow: hidden;
+        "
+      >
+        <div
+          id="progress-bar"
+          style="
+            width: 0%;
+            height: 100%;
+            background: #4caf50;
+            animation: progress 60s linear;
+          "
+        ></div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes progress {
+        from {
+          width: 0%;
+        }
+        to {
+          width: 90%;
+        }
+      }
+    </style>
 
     <!-- ✨ Scripts for debug panel and iframe communication -->
     <script>
-      
-      // Dismiss audio notice
       function dismissAudioNotice() {
         const notice = document.getElementById("audio-notice");
         if (notice) {
           notice.style.display = "none";
         }
-      function generateNewLevels() {
-          const status = document.getElementById('status');
-          status.textContent = 'Generating levels...';
-          
-          fetch('/generate-levels', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ worlds: ['12', '13', '14'] })
+
+        function generateNewLevels() {
+          const status = document.getElementById("status");
+          if (status) status.textContent = "Generating levels...";
+
+          fetch("/generate-levels", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ worlds: ["12", "13", "14"] }),
           })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              status.textContent = '✅ Levels generated! Reload the page to play them.';
-              // Optional: automatically reload after 2 seconds
-              setTimeout(() => window.location.reload(), 2000);
-            } else {
-              status.textContent = '❌ Error: ' + data.error;
-            }
-          })
-          .catch(error => {
-            status.textContent = '❌ Error: ' + error.message;
-          });
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                if (status)
+                  status.textContent =
+                    "✅ Levels generated! Reload the page to play them.";
+                setTimeout(() => window.location.reload(), 2000);
+              } else {
+                if (status) status.textContent = "❌ Error: " + data.error;
+              }
+            })
+            .catch((error) => {
+              if (status) status.textContent = "❌ Error: " + error.message;
+            });
         }
 
-        // Try to unmute/play audio in iframe
         try {
           const gameWindow = document.getElementById("game").contentWindow;
           if (gameWindow && gameWindow.AudioPlayer) {
-            // Try to resume audio context
             console.log("Attempting to enable audio...");
           }
         } catch (e) {
@@ -298,7 +327,6 @@
         }
       }
 
-      // Show audio notice on first load
       window.addEventListener("load", function () {
         setTimeout(function () {
           const notice = document.getElementById("audio-notice");
@@ -308,7 +336,6 @@
         }, 1000);
       });
 
-      // Toggle debug panel with 'D' key
       document.addEventListener("keydown", function (e) {
         if (e.key === "r" || e.key === "R") {
           const panel = document.getElementById("debug-panel");
@@ -323,25 +350,21 @@
         }
       });
 
-      // Update scores display every 500ms
       setInterval(function () {
         try {
-          // Access the iframe's window
           const gameWindow = document.getElementById("game").contentWindow;
 
           if (gameWindow && gameWindow.GameRelationships) {
             const scores = gameWindow.GameRelationships.getAll();
 
-            // Update display
             const toadEl = document.getElementById("toad-score");
-            const luigiEl = document.getElementById("luigi-score");
-            const peachEl = document.getElementById("peach-score");
+            const goombaEl = document.getElementById("goomba-score");
+            const koopaEl = document.getElementById("koopa-score");
 
             if (toadEl) toadEl.textContent = scores.toad || 0;
-            if (luigiEl) luigiEl.textContent = scores.luigi || 0;
-            if (peachEl) peachEl.textContent = scores.peach || 0;
+            if (goombaEl) goombaEl.textContent = scores.goomba || 0;
+            if (koopaEl) koopaEl.textContent = scores.koopa || 0;
 
-            // Color code based on relationship
             if (toadEl) {
               toadEl.style.color =
                 scores.toad > 30
@@ -350,56 +373,52 @@
                   ? "#ff0000"
                   : "#ffffff";
             }
-            if (luigiEl) {
-              luigiEl.style.color =
-                scores.luigi > 30
+            if (goombaEl) {
+              goombaEl.style.color =
+                scores.goomba > 30
                   ? "#00ff00"
-                  : scores.luigi < -30
+                  : scores.goomba < -30
                   ? "#ff0000"
                   : "#ffffff";
             }
-            if (peachEl) {
-              peachEl.style.color =
-                scores.peach > 30
+            if (koopaEl) {
+              koopaEl.style.color =
+                scores.koopa > 30
                   ? "#00ff00"
-                  : scores.peach < -30
+                  : scores.koopa < -30
                   ? "#ff0000"
                   : "#ffffff";
             }
           }
         } catch (e) {
-          // Ignore errors (iframe might not be loaded yet)
+          // Ignore errors
         }
       }, 500);
 
-      // Test functions that communicate with iframe
       function testToad() {
         const gameWindow = document.getElementById("game").contentWindow;
-        if (gameWindow && gameWindow.StoryTrigger) {
-          gameWindow.StoryTrigger.test("toad");
+        if (gameWindow && gameWindow.testScenario) {
+          gameWindow.testScenario("toad");
         } else {
           alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
-          console.error("StoryTrigger not available in game window");
         }
       }
 
-      function testLuigi() {
+      function testGoomba() {
         const gameWindow = document.getElementById("game").contentWindow;
-        if (gameWindow && gameWindow.StoryTrigger) {
-          gameWindow.StoryTrigger.test("luigi");
+        if (gameWindow && gameWindow.testScenario) {
+          gameWindow.testScenario("goomba");
         } else {
           alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
-          console.error("StoryTrigger not available in game window");
         }
       }
 
-      function testPeach() {
+      function testKoopa() {
         const gameWindow = document.getElementById("game").contentWindow;
-        if (gameWindow && gameWindow.StoryTrigger) {
-          gameWindow.StoryTrigger.test("peach");
+        if (gameWindow && gameWindow.testScenario) {
+          gameWindow.testScenario("koopa");
         } else {
           alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
-          console.error("StoryTrigger not available in game window");
         }
       }
 
@@ -414,7 +433,6 @@
             gameWindow.GameRelationships.reset();
             console.log("✅ All relationships reset to 0");
 
-            // Show confirmation
             setTimeout(function () {
               alert(
                 "✅ Relationships Reset!\n\nAll character relationships are now 0."
@@ -423,11 +441,9 @@
           }
         } else {
           alert("⚠️ Game not loaded yet!\n\nWait a few seconds and try again.");
-          console.error("GameRelationships not available in game window");
         }
       }
 
-      // Show debug panel briefly after game loads (so users know it exists)
       window.addEventListener("load", function () {
         setTimeout(function () {
           const panel = document.getElementById("debug-panel");
@@ -435,15 +451,13 @@
             panel.style.display = "block";
             console.log('💡 Tip: Press "R" key to toggle debug panel');
 
-            // Auto-hide after 4 seconds
             setTimeout(function () {
               panel.style.display = "none";
             }, 4000);
           }
-        }, 3000); // Show after 3 seconds (game should be loaded)
+        }, 3000);
       });
 
-      // Console helper functions
       console.log(
         "%c🎮 Full Screen Mario - AI Storytelling Edition",
         "color: #ff0000; font-size: 16px; font-weight: bold;"
@@ -454,53 +468,42 @@
       );
       console.log("  Press R key - Toggle debug panel");
       console.log("  testToad() - Test Toad story scene");
-      console.log("  testLuigi() - Test Luigi story scene");
-      console.log("  testPeach() - Test Peach story scene");
+      console.log("  testGoomba() - Test Goomba story scene");
+      console.log("  testKoopa() - Test Koopa story scene");
       console.log("  resetRelationships() - Reset all scores to 0");
-      console.log(
-        "%cGame Window Access:",
-        "color: #00ff00; font-size: 14px; font-weight: bold;"
-      );
-      console.log(
-        '  const game = document.getElementById("game").contentWindow;'
-      );
-      console.log('  game.GameRelationships.update("toad", 50)');
-      console.log("  game.GameRelationships.getAll()");
-      console.log('  game.StoryTrigger.test("toad")');
-    window.addEventListener('DOMContentLoaded', function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  
-  if (!urlParams.has('generated')) {
-    // Show loading screen immediately
-    const loadingScreen = document.getElementById('loading-screen');
-    if (loadingScreen) {
-      loadingScreen.style.display = 'flex';
-    }
-    
-    console.log('🎮 Generating levels... (this takes 30-60 seconds)');
-    
-    fetch('/generate-levels', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ worlds: ['12', '13', '14'] })
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log('✅ Levels generated!', data);
-      // Reload to play new levels
-      window.location.href = window.location.pathname + '?generated=1';
-    })
-    .catch(error => {
-      console.error('❌ Error:', error);
-      if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-      }
-      alert('Failed to generate levels: ' + error.message);
-    });
-  } else {
-    console.log('✅ Playing freshly generated levels!');
-  }
-});
+
+      window.addEventListener("DOMContentLoaded", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (!urlParams.has("generated")) {
+          const loadingScreen = document.getElementById("loading-screen");
+          if (loadingScreen) {
+            loadingScreen.style.display = "flex";
+          }
+
+          console.log("🎮 Generating levels... (this takes 30-60 seconds)");
+
+          fetch("/generate-levels", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ worlds: ["12", "13", "14"] }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("✅ Levels generated!", data);
+              window.location.href = window.location.pathname + "?generated=1";
+            })
+            .catch((error) => {
+              console.error("❌ Error:", error);
+              if (loadingScreen) {
+                loadingScreen.style.display = "none";
+              }
+              alert("Failed to generate levels: " + error.message);
+            });
+        } else {
+          console.log("✅ Playing freshly generated levels!");
+        }
+      });
     </script>
   </body>
 </html>

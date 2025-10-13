@@ -31,13 +31,39 @@
     <script src="triggers.js"></script>
     <script src="upkeep.js"></script>
     <script src="utility.js"></script>
-
-    <!-- ✨ Your AI storytelling scripts -->
     <script src="relationships.js"></script>
+    <script src="relationship_scenarios.js"></script>
     <script src="map_modifier.js"></script>
-    <!-- <script src="relationship_scenarios.js"></script> -->
-    <!-- <script src="dialogue.js"></script> -->
-    <!-- <script src="story_trigger.js"></script> -->
+    <script src="dialogue.js"></script>
+
+    <script>
+      window.addEventListener("load", function () {
+        console.log("🎮 Initializing AI storytelling systems...");
+
+        // Wait for game to be ready
+        setTimeout(function () {
+          // Initialize relationship system
+          if (window.GameRelationships) {
+            GameRelationships.init();
+            console.log("✅ GameRelationships initialized");
+          }
+
+          // Initialize map modifier
+          if (window.MapModifier) {
+            MapModifier.init();
+            console.log("✅ MapModifier initialized");
+          }
+
+          // Initialize flagpole trigger
+          if (window.FlagpoleDialogueTrigger) {
+            FlagpoleDialogueTrigger.init();
+            console.log("✅ FlagpoleDialogueTrigger initialized");
+          }
+
+          console.log("✅ All AI systems initialized!");
+        }, 2000);
+      });
+    </script>
   </head>
   <body onload="FullScreenMario()">
     <!-- ✨ Relationship Message Box for in-game popups -->
