@@ -2,6 +2,10 @@
 An enhanced version of Super Mario Bros featuring AI-powered dynamic storytelling, relationship systems, and adaptive gameplay based on player choices.
 Original source code found at: https://github.com/karol-f/FullScreenMario
 
+## Setup
+1. Get a free API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Replace `YOUR_GEMINI_API_KEY_HERE` in relationship_scenarios.js
+
 ✨ Features
 🤖 AI-Powered Storytelling
 
@@ -19,8 +23,6 @@ Affects Gameplay: Relationships modify NPC behavior:
 Allies (50-100): NPCs become friendly, don't hurt you, and move slowly
 Neutral (-49 to 49): Normal behavior
 Enemies (-50 to -100): NPCs become more aggressive and faster
-
-
 
 🎭 Interactive Dialogue System
 
